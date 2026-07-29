@@ -1,0 +1,21 @@
+# Regenerable from `python -m src.data` — never committed (spec §4.3).
+data/*.txt
+data/*.bin
+data/*.json
+!data/.gitkeep
+
+# Weights. The tiny final checkpoint is force-added at release time.
+checkpoints/*.pt
+!checkpoints/.gitkeep
+
+# Results are committed (they are the artifact) except bulky intermediates.
+results/**/*.png.tmp
+
+# Environment
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Local HF cache if it ever lands inside the repo
+.cache/

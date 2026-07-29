@@ -1,0 +1,121 @@
+"""nLemon-14 config — the single source of truth (spec §4.1).
+
+Every hyperparameter and the global seed live in ``configs/nlemon_14m.yaml``.
+This module loads that file into a frozen dataclass. Nothing else in the repo
+may hardcode a hyperparameter, and every artifact records ``Config.hash()`` so
+a scorecard can always be traced back to the exact settings that produced it.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import asdict, dataclass, fields
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parent
+DEFAULT_CONFIG_PATH = REPO_ROOT / "configs" / "nlemon_14m.yaml"
+
+
+@dataclass(frozen=True)
+class Config:
+    """Immutable run configuration. Field order is the hash order."""
+
+    project_name: str = "nLemon-14"  # flows into every artifact + the scorecard
+    seed: int = 1337
+
+    # model
+    vocab_size: int = 8000
+    d_model: int = 384
+    n_layers: int = 6
+    n_heads: int = 6
+    context_len: int = 256
+    dropout: float = 0.1
+
+    # training
+    micro_batch: int = 16
+    grad_accum_steps: int = 4
+    lr: float = 3e-4
+    max_steps: int = 20000
+    warmup_steps: int = 1000
+
+    # data
+    dataset_name: str = "roneneldan/TinyStories"
+    dataset_revision: str = "main"
+    doc_separator: str = "<|endoftext|>"
+    max_train_docs: int = 0  # 0 = entire split
+    max_val_docs: int = 0
+    peek_samples: int = 3
+
+    # paths (relative to the repo root)
+    data_dir: str = "data"
+    ckpt_dir: str = "checkpoints"
+    results_dir: str = "results"
+
+    # -- derived ------------------------------------------------------------
+    @property
+    def head_dim(self) -> int:
+        if self.d_model % self.n_heads:
+            raise ValueError(
+                f"d_model ({self.d_model}) must be divisible by n_heads ({self.n_heads})"
+            )
+        return self.d_model // self.n_heads
+
+    @property
+    def effective_batch(self) -> int:
+        """Tokens-per-optimizer-step is what training actually sees (ADR-004)."""
+        return self.micro_batch * self.grad_accum_steps
+
+    # -- io -----------------------------------------------------------------
+    @staticmethod
+    def load(path: str | Path | None = None) -> "Config":
+        path = Path(path) if path else DEFAULT_CONFIG_PATH
+        with open(path, "r", encoding="utf-8") as f:
+            raw: dict[str, Any] = yaml.safe_load(f) or {}
+
+        known = {f.name for f in fields(Config)}
+        unknown = set(raw) - known
+        if unknown:
+            raise ValueError(
+                f"{path}: unknown config key(s) {sorted(unknown)}. "
+                f"Add the field to Config or remove it from the YAML — silent "
+                f"drops would break the reproducibility claim."
+            )
+
+        cfg = Config(**raw)
+        cfg.validate()
+        return cfg
+
+    def validate(self) -> None:
+        _ = self.head_dim  # raises if d_model is not divisible by n_heads
+        if self.warmup_steps > self.max_steps:
+            raise ValueError("warmup_steps must not exceed max_steps")
+        for name in ("vocab_size", "d_model", "n_layers", "n_heads", "context_len",
+                     "micro_batch", "grad_accum_steps", "max_steps"):
+            if getattr(self, name) <= 0:
+                raise ValueError(f"{name} must be positive")
+        if not 0.0 <= self.dropout < 1.0:
+            raise ValueError("dropout must be in [0, 1)")
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def hash(self) -> str:
+        """Short, stable fingerprint of every field. Recorded in every artifact."""
+        blob = json.dumps(self.as_dict(), sort_keys=True).encode("utf-8")
+        return hashlib.sha256(blob).hexdigest()[:12]
+
+
+def resolve(attr_value: str, *parts: str) -> Path:
+    """Join a configured relative directory onto the repo root."""
+    return REPO_ROOT.joinpath(attr_value, *parts)
+
+
+if __name__ == "__main__":
+    cfg = Config.load()
+    print(json.dumps(cfg.as_dict(), indent=2, sort_keys=True))
+    print(f"\nconfig_hash = {cfg.hash()}")
+    print(f"head_dim = {cfg.head_dim}   effective_batch = {cfg.effective_batch}")

@@ -1,0 +1,20 @@
+# nLemon-14 — pinned dependencies
+#
+# torch is pulled from the PyTorch CUDA 13.0 wheel index. The cu130 build is the
+# first one offering torch 2.12.x and it matches the target machine's driver
+# (NVIDIA 581.86 >= 580, the CUDA 13.0 floor on Windows). CPU-only machines can
+# drop the `+cu130` local version tag and the extra index; everything except
+# pretraining speed is unaffected.
+--extra-index-url https://download.pytorch.org/whl/cu130
+
+torch==2.12.1+cu130
+
+numpy==2.5.0
+tqdm==4.68.3
+datasets==5.0.1
+tokenizers==0.22.2
+PyYAML==6.0.3
+
+# Repairs the ~757k double-encoded smart quotes that ship in the upstream
+# TinyStories text (ADR-009). Pure python, no transitive weight.
+ftfy==6.3.1

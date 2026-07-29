@@ -1,0 +1,36 @@
+# nLemon-14 — the run config. Single source of truth (spec §4.1).
+# Nothing in this repo hardcodes a hyperparameter; every script reads this file
+# and every artifact records the hash of the config it was produced with.
+
+project_name: nLemon-14
+seed: 1337
+
+# --- model shape (never changed to fit VRAM — see ADR-004) -------------------
+vocab_size: 8000
+d_model: 384
+n_layers: 6
+n_heads: 6
+context_len: 256
+dropout: 0.1
+
+# --- training ---------------------------------------------------------------
+# VRAM fitting happens here and only here: lower micro_batch, raise grad_accum
+# to keep the effective batch (micro_batch * grad_accum_steps) constant.
+micro_batch: 16
+grad_accum_steps: 4
+lr: 3.0e-4
+max_steps: 20000
+warmup_steps: 1000
+
+# --- data -------------------------------------------------------------------
+dataset_name: roneneldan/TinyStories
+dataset_revision: main      # resolved to an exact commit sha in data/manifest.json
+doc_separator: "<|endoftext|>"
+max_train_docs: 0           # 0 = use the entire split
+max_val_docs: 0
+peek_samples: 3             # stories dumped to results/samples/corpus_peek.md
+
+# --- paths ------------------------------------------------------------------
+data_dir: data
+ckpt_dir: checkpoints
+results_dir: results
