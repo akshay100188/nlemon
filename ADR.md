@@ -186,10 +186,30 @@ default of uncurling quotes to ASCII.
 - *Strip non-ASCII entirely* — would also delete legitimate accented names.
 
 **Consequence.** One extra dependency (`ftfy`, pure python) and a data build that takes
-minutes rather than seconds. **Measured result: 757,666 → 18 stray characters across
+minutes rather than seconds. **Measured result: 757,666 → 9 stray characters across
 1.84 GiB of train text, and validation fully clean.** The build prints the residual count
-every run, so a future upstream change that reopens this cannot pass unnoticed.
+every run and records a context snippet for each in `data/manifest.json`, so a future
+upstream change that reopens this cannot pass unnoticed.
 
 Our shards are therefore **not** byte-identical to the upstream text. The manifest records
 the upstream commit sha, the per-split repair counts and our shard SHA-256, so the
 transformation is verifiable from both ends.
+
+### Footnote: what the remaining 9 characters are
+
+Every residual character was located and read in context before this ADR was closed. The
+first audit found 18; **9 of those were self-inflicted** and are now fixed. The rest are
+recorded here rather than chased.
+
+| Codepoint | n | What it actually is | Action |
+|---|---|---|---|
+| `U+00C2` Â | 9 | **Our own bug.** `U+0080`–`U+00BF` encode to UTF-8 as `C2 xx`, so their mojibake is `Â` + the character. The no-break-space and soft-hyphen rules rewrote the *second* half and stranded the first — `he<Â>'d`, `loved.<Â>`, `wasn<Â>'t`. | **Fixed.** A rule for the orphaned prefix now runs last, after the pair rules. Audited: all 9 were strandings, none a real capital A-circumflex. |
+| `U+00E2` â | 1 | **A false positive — legitimate French.** `papier-mâché`, correctly spelled. | **Left alone.** Deleting it would corrupt correct text. |
+| `U+00E2` â | 2 | A mojibake'd emoji: `'Iâ¤ï¸ U'` was `'I❤️ U'`. Same failure as the quotes — the third byte died upstream. | **Left alone.** Unrecoverable, and 2 occurrences in 364M words. |
+| `U+20AC` € | 6 | **One non-English document.** A single story (of 2,119,489) starts in English and continues in double-encoded Traditional Chinese. A whole-corpus scan confirms exactly **1 document contains CJK, 46 characters total**. | **Left alone.** Repairing a corpus-wide encoding fault is in scope; hand-fixing one anomalous document is not. |
+
+The false positive is the reason `SUSPICIOUS` is deliberately broader than `RESIDUE`: the
+audit flags what is *usually* damage and records context, and a human decides. A cleaner
+that silently deleted every `â` would have eaten `papier-mâché`. The residual count will
+therefore sit at 9 rather than 0 on a correct build — a known, explained floor, not an
+open defect.

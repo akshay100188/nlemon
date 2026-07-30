@@ -103,8 +103,11 @@ The corpus is synthetic: no PII, no scraping, no real people or organisations.
 spent on mojibake is a merge not spent on English. `ftfy` alone was not enough — it
 *created* 140,572 spurious `†` characters out of quotes whose bytes were already
 lost, which is worse, so an explicit residue map runs after it. The measured result is
-**18 stray characters left in train and none in validation**; the count is printed on
-every build. The full reasoning is
+**9 stray characters left in train and none in validation** — and all 9 are identified
+and explained, not merely counted: one is legitimate French (`papier-mâché`), two are a
+mojibake'd emoji, and six are a single non-English document out of 2.1M. Every build
+prints the count and records a context snippet for each in `data/manifest.json`. The full
+reasoning and the adjudication table are in
 [ADR-009](ADR.md#adr-009--repair-upstream-mojibake-before-tokenizing).
 
 `data/` is gitignored and fully regenerable with `python -m src.data`. Train and

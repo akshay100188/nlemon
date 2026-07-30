@@ -58,11 +58,26 @@ RESIDUE: tuple[tuple[str, str], ...] = (
     (chr(0x200B), ""),                 # zero-width space
     (chr(0x00AD), ""),                 # soft hyphen
     (chr(0xFFFD), ""),                 # replacement char: the byte is already gone
+    # Orphaned mojibake prefix. U+0080..U+00BF encode to UTF-8 as C2 xx, so their
+    # mojibake is 'A-circumflex' + the character. The rules above rewrite the
+    # second half (no-break space, soft hyphen), which would strand the first —
+    # 'he<C2>'d', 'loved.<C2>'. Audited every occurrence in the 1.84 GiB shard:
+    # all 9 are stranded prefixes, none is a real capital A-circumflex. Runs last
+    # so it only ever sees what the pair rules left behind.
+    (chr(0x00C2), ""),
 )
 
 # If any of these survive cleaning, the repair has a hole worth knowing about.
+# Deliberately broader than RESIDUE: it flags characters that are *usually*
+# damage but can be legitimate (a lowercase a-circumflex is correct in
+# "papier-mache"), so the audit records context and a human adjudicates rather
+# than the cleaner guessing. See RESIDUE_FOOTNOTE in the manifest.
 SUSPICIOUS = (chr(0x00E2), chr(0x20AC), chr(0x2020), chr(0xFFFD),
               chr(0x00C2), chr(0x00C3))
+
+# How many context snippets to keep per suspicious codepoint in the manifest.
+RESIDUE_SAMPLES = 5
+RESIDUE_CONTEXT = 55
 
 
 def clean_text(raw: str) -> tuple[str, bool]:
@@ -139,6 +154,7 @@ def write_split(split_ds, out_path: Path, separator: str, limit: int) -> dict:
     n_empty = 0
     n_repaired = 0
     residual: Counter[str] = Counter()
+    residual_ctx: dict[str, list[str]] = {}
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8", newline="\n") as f:
@@ -150,8 +166,19 @@ def write_split(split_ds, out_path: Path, separator: str, limit: int) -> dict:
                 n_empty += 1
                 continue
             for ch in SUSPICIOUS:
-                if ch in text:
-                    residual[f"U+{ord(ch):04X}"] += text.count(ch)
+                if ch not in text:
+                    continue
+                key = f"U+{ord(ch):04X}"
+                residual[key] += text.count(ch)
+                # Keep a few snippets so the remainder is a recorded footnote
+                # rather than an unexplained number someone finds later.
+                seen = residual_ctx.setdefault(key, [])
+                if len(seen) < RESIDUE_SAMPLES:
+                    at = text.index(ch)
+                    seen.append(
+                        text[max(0, at - RESIDUE_CONTEXT): at + RESIDUE_CONTEXT]
+                        .replace("\n", " ")
+                    )
             chunk = text + delimiter
             f.write(chunk)
             encoded = chunk.encode("utf-8")
@@ -171,6 +198,7 @@ def write_split(split_ds, out_path: Path, separator: str, limit: int) -> dict:
         "empty_docs_dropped": n_empty,
         "docs_encoding_repaired": n_repaired,
         "residual_suspicious_chars": dict(residual),
+        "residual_context": residual_ctx,
         "truncated": n_read < n_total,
         "chars": int(n_chars),
         "words": int(word_counts.sum()),
@@ -212,8 +240,13 @@ def print_stats(stats: dict[str, dict]) -> None:
             print(f"{split:<12} dropped {s['empty_docs_dropped']:,} empty docs "
                   f"of {s['docs_read']:,} read (ADR-008)")
         residual = s["residual_suspicious_chars"]
-        status = "clean" if not residual else f"WARN {residual}"
-        print(f"{split:<12} residual mojibake: {status}")
+        if not residual:
+            print(f"{split:<12} residual suspicious chars: none")
+        else:
+            n = sum(residual.values())
+            print(f"{split:<12} residual suspicious chars: {n} "
+                  f"({', '.join(f'{k} x{v}' for k, v in sorted(residual.items()))}) "
+                  f"- context in manifest, adjudicated in ADR-009")
         if s["truncated"]:
             print(f"{split:<12} TRUNCATED to {s['docs_read']:,} of "
                   f"{s['docs_available']:,} docs by config")
