@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import random
 import time
 from collections import Counter
@@ -26,6 +25,7 @@ import numpy as np
 from tqdm import tqdm
 
 from config import REPO_ROOT, Config
+from utils.io import write_json, write_text
 from utils.seed import set_seed
 
 SPLITS = {"train": "max_train_docs", "validation": "max_val_docs"}
@@ -269,7 +269,7 @@ def write_peek(split_ds, out_path: Path, n: int, seed: int, dataset: dict) -> li
     for rank, i in enumerate(idx, 1):
         text, _ = clean_text(split_ds[i][TEXT_COLUMN])
         lines += [f"## {rank}. train[{i}]", "", "> " + text.strip().replace("\n", "\n> "), ""]
-    out_path.write_text("\n".join(lines), encoding="utf-8")
+    write_text(out_path, "\n".join(lines))
     return idx
 
 
@@ -325,6 +325,7 @@ def main() -> None:
     manifest = {
         "project_name": cfg.project_name,
         "config_hash": cfg.hash(),
+        "data_stage_hash": cfg.stage_hash("data"),
         "seed": cfg.seed,
         "dataset": dataset,
         "splits": stats,
@@ -332,8 +333,7 @@ def main() -> None:
         "built_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "build_seconds": round(time.time() - started, 1),
     }
-    manifest_path = data_dir / "manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    manifest_path = write_json(data_dir / "manifest.json", manifest)
 
     print(f"\nwrote {data_dir / 'train.txt'}")
     print(f"wrote {data_dir / 'val.txt'}")

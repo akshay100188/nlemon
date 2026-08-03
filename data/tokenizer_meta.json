@@ -1,0 +1,32 @@
+{
+  "project_name": "nLemon-14",
+  "config_hash": "53f4919fceb7",
+  "tokenizer_stage_hash": "1444379330a5",
+  "seed": 1337,
+  "vocab_size": 8000,
+  "vocab_size_config": 8000,
+  "min_frequency": 2,
+  "trained_on_docs": 200000,
+  "separator": "<|endoftext|>",
+  "separator_id": 0,
+  "train_seconds": 7.2,
+  "built_at_utc": "2026-08-03T18:33:20Z",
+  "shards": {
+    "train": {
+      "file": "train.bin",
+      "docs": 2119489,
+      "tokens": 465819316,
+      "bytes": 931638632,
+      "dtype": "uint16",
+      "seconds": 742.6
+    },
+    "val": {
+      "file": "val.bin",
+      "docs": 21990,
+      "tokens": 4682459,
+      "bytes": 9364918,
+      "dtype": "uint16",
+      "seconds": 1.5
+    }
+  }
+}

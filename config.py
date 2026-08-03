@@ -19,6 +19,24 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = REPO_ROOT / "configs" / "nlemon_14m.yaml"
 
+# Which fields actually determine each stage's output (ADR-010).
+#
+# `Config.hash()` fingerprints the whole config, so adding a field for a later
+# phase changes it — which would make a Phase 1 artifact look stale even though
+# the corpus on disk is byte-for-byte identical. A stage hash covers only the
+# inputs that stage really depends on, so "did this artifact change?" and "did
+# the config change somewhere else?" stop being the same question.
+STAGE_FIELDS: dict[str, tuple[str, ...]] = {
+    "data": (
+        "seed", "dataset_name", "dataset_revision", "doc_separator",
+        "max_train_docs", "max_val_docs", "peek_samples",
+    ),
+    "tokenizer": (
+        "seed", "vocab_size", "doc_separator",
+        "tokenizer_train_docs", "tokenizer_min_frequency",
+    ),
+}
+
 
 @dataclass(frozen=True)
 class Config:
@@ -49,6 +67,10 @@ class Config:
     max_train_docs: int = 0  # 0 = entire split
     max_val_docs: int = 0
     peek_samples: int = 3
+
+    # tokenizer
+    tokenizer_train_docs: int = 200_000  # bounds BPE *training*, not encoding
+    tokenizer_min_frequency: int = 2
 
     # paths (relative to the repo root)
     data_dir: str = "data"
@@ -108,6 +130,22 @@ class Config:
         blob = json.dumps(self.as_dict(), sort_keys=True).encode("utf-8")
         return hashlib.sha256(blob).hexdigest()[:12]
 
+    def stage_hash(self, stage: str) -> str:
+        """Fingerprint of only the fields that determine ``stage``'s output.
+
+        Two builds with the same stage hash must produce identical artifacts for
+        that stage, regardless of what changed elsewhere in the config.
+        """
+        try:
+            fields_ = STAGE_FIELDS[stage]
+        except KeyError:
+            raise ValueError(
+                f"unknown stage {stage!r}; known stages: {sorted(STAGE_FIELDS)}"
+            ) from None
+        subset = {name: getattr(self, name) for name in fields_}
+        blob = json.dumps(subset, sort_keys=True).encode("utf-8")
+        return hashlib.sha256(blob).hexdigest()[:12]
+
 
 def resolve(attr_value: str, *parts: str) -> Path:
     """Join a configured relative directory onto the repo root."""
@@ -118,4 +156,6 @@ if __name__ == "__main__":
     cfg = Config.load()
     print(json.dumps(cfg.as_dict(), indent=2, sort_keys=True))
     print(f"\nconfig_hash = {cfg.hash()}")
+    for stage in STAGE_FIELDS:
+        print(f"  stage_hash[{stage:<9}] = {cfg.stage_hash(stage)}")
     print(f"head_dim = {cfg.head_dim}   effective_batch = {cfg.effective_batch}")

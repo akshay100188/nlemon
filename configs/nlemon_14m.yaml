@@ -30,6 +30,16 @@ max_train_docs: 0           # 0 = use the entire split
 max_val_docs: 0
 peek_samples: 3             # stories dumped to results/samples/corpus_peek.md
 
+# --- tokenizer --------------------------------------------------------------
+# Byte-level BPE, so there is no OOV and no unk token to configure.
+# tokenizer_train_docs bounds the *training* sample only; the whole corpus is
+# still encoded. 8k merges converge long before 1.84 GiB of text, and this
+# machine has ~1.8 GiB of free RAM — a VRAM/RAM fit made via a recorded config
+# knob rather than a silent change (ADR-004). The number is measured, not
+# guessed: see results/tokenizer_subset_sweep.md.
+tokenizer_train_docs: 200000
+tokenizer_min_frequency: 2
+
 # --- paths ------------------------------------------------------------------
 data_dir: data
 ckpt_dir: checkpoints

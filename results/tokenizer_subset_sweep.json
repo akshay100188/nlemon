@@ -1,0 +1,58 @@
+{
+  "seed": 1337,
+  "vocab_size": 8000,
+  "min_frequency": 2,
+  "tokenizer_stage_hash": "1444379330a5",
+  "plateau_docs": 25000,
+  "configured_docs": 200000,
+  "rows": [
+    {
+      "train_docs": 25000,
+      "vocab_size": 8000,
+      "tokens_per_word": 1.2248,
+      "chars_per_token": 4.1823,
+      "seconds": 15.2,
+      "vocab_overlap_vs_largest": 0.9261
+    },
+    {
+      "train_docs": 50000,
+      "vocab_size": 8000,
+      "tokens_per_word": 1.2241,
+      "chars_per_token": 4.1846,
+      "seconds": 25.1,
+      "vocab_overlap_vs_largest": 0.9483
+    },
+    {
+      "train_docs": 100000,
+      "vocab_size": 8000,
+      "tokens_per_word": 1.2241,
+      "chars_per_token": 4.1849,
+      "seconds": 44.2,
+      "vocab_overlap_vs_largest": 0.96
+    },
+    {
+      "train_docs": 200000,
+      "vocab_size": 8000,
+      "tokens_per_word": 1.2243,
+      "chars_per_token": 4.1842,
+      "seconds": 88.2,
+      "vocab_overlap_vs_largest": 0.9738
+    },
+    {
+      "train_docs": 400000,
+      "vocab_size": 8000,
+      "tokens_per_word": 1.2241,
+      "chars_per_token": 4.1848,
+      "seconds": 167.7,
+      "vocab_overlap_vs_largest": 0.9871
+    },
+    {
+      "train_docs": 800000,
+      "vocab_size": 8000,
+      "tokens_per_word": 1.2241,
+      "chars_per_token": 4.1849,
+      "seconds": 244.1,
+      "vocab_overlap_vs_largest": 1.0
+    }
+  ]
+}

@@ -19,7 +19,7 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 | Phase | Stage | State |
 |---|---|---|
 | 1 | Scaffold + data | ✅ done |
-| 2 | Tokenizer (8k BPE) | ⬜ not started |
+| 2 | Tokenizer (8k BPE) | ✅ done |
 | 3 | Architecture | ⬜ not started |
 | 4 | Pretraining | ⬜ not started |
 | 5 | SFT | ⬜ not started |
@@ -65,13 +65,24 @@ python -m venv .venv
 pip install -r requirements.txt
 
 python -m utils.device            # confirm CUDA / bf16 / VRAM
-python config.py                  # print the resolved config + its hash
-python -m src.data                # build the corpus  (Phase 1)
+python config.py                  # print the resolved config + its hashes
+
+python -m src.data                # Phase 1 — build the corpus      (~17 min)
+python -m src.tokenizer train     # Phase 2 — 8k byte-level BPE
+python -m src.tokenizer encode    # Phase 2 — corpus -> .bin shards
+python -m src.tokenizer check     # Phase 2 — the gate
 ```
 
 Every hyperparameter and the global seed live in
 [`configs/nlemon_14m.yaml`](configs/nlemon_14m.yaml). Nothing is hardcoded elsewhere,
-and every artifact records the 12-character hash of the config that produced it.
+and every artifact records the hash of the config that produced it.
+
+**Two kinds of hash** ([ADR-010](ADR.md#adr-010--per-stage-config-hashes-alongside-the-global-one)).
+`config_hash` fingerprints the whole config and identifies a run. A `stage_hash`
+covers only the fields a given stage actually depends on, so adding a Phase 4
+hyperparameter does not make your Phase 1 corpus look stale. This is verified rather
+than asserted: adding the two tokenizer fields moved `config_hash` from `be96725bd672`
+to `53f4919fceb7` while `data_stage_hash` and both shard SHA-256s stayed put.
 
 ---
 
@@ -121,6 +132,27 @@ A deterministic peek at three training stories lives in
 
 ---
 
+## Tokenizer
+
+An 8,000-token **byte-level** BPE, trained on our own corpus — no borrowed vocabulary
+([ADR-011](ADR.md#adr-011--byte-level-bpe)). Byte-level means the initial alphabet is all
+256 bytes, so there is no OOV, no unknown token, and the encode→decode roundtrip is
+lossless *by construction* rather than by luck. That matters here because the corpus still
+contains 9 characters of unrepairable non-ASCII and one Traditional Chinese document
+(ADR-009); a character-level vocabulary with an `<unk>` token would fail the gate on
+exactly those inputs, or force the gate to be weakened.
+
+Measured on held-out validation text: **1.2243 tokens per word, 4.18 characters per
+token.**
+
+**How much text does an 8k vocabulary need?** Measured, not guessed —
+[results/tokenizer_subset_sweep.md](results/tokenizer_subset_sweep.md). Compression
+plateaus at 25,000 documents: across a 32× increase in training text the spread is
+0.0007 tokens/word. `tokenizer_train_docs` is nonetheless set to **200,000**, because
+compression is not the only thing at stake — two tokenizers can compress identically while
+disagreeing on which rare tokens earned a slot. At 200k the vocabulary is 97.4% identical
+to one trained on 800k documents; at 25k it is only 92.6%.
+
 ## Repo layout
 
 ```
@@ -128,8 +160,8 @@ nlemon/
 ├── config.py                 # frozen dataclass, single source of truth
 ├── configs/nlemon_14m.yaml   # every hyperparameter + the seed
 ├── src/
-│   ├── data.py               # corpus build           (Phase 1)
-│   ├── tokenizer.py          # 8k BPE                 (Phase 2)
+│   ├── data.py               # corpus build           (Phase 1) ✅
+│   ├── tokenizer.py          # 8k byte-level BPE      (Phase 2) ✅
 │   ├── model.py              # GPT from scratch       (Phase 3)
 │   ├── train.py              # pretraining            (Phase 4)
 │   ├── sft.py                # instruction tuning     (Phase 5)

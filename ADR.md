@@ -213,3 +213,98 @@ audit flags what is *usually* damage and records context, and a human decides. A
 that silently deleted every `â` would have eaten `papier-mâché`. The residual count will
 therefore sit at 9 rather than 0 on a correct build — a known, explained floor, not an
 open defect.
+
+---
+
+## ADR-010 — Per-stage config hashes alongside the global one
+
+**Context.** Phase 2 added two fields to the config. That changed `Config.hash()` from
+`be96725bd672` to `53f4919fceb7` — and therefore made every Phase 1 artifact look stale,
+despite the corpus on disk being byte-for-byte identical. Left alone, this gets worse every
+phase: by Phase 6 the global hash has moved five times and stops meaning anything, which is
+precisely when we need it to mean something.
+
+**Decision.** Keep the global hash, and add `Config.stage_hash(stage)` over a declared
+subset of fields (`STAGE_FIELDS` in `config.py`). Artifacts record both. The contract: two
+builds with the same *stage* hash must produce identical artifacts for that stage,
+whatever else changed in the config.
+
+**Rejected.**
+- *Only the global hash* — conflates "the config changed" with "this artifact changed".
+  Every later phase would force a spurious re-verification of every earlier one.
+- *Only stage hashes* — loses the single fingerprint that identifies a whole run, which is
+  what the Phase 7 scorecard needs to be reproducible from.
+- *Deriving the field list automatically* (e.g. tracing attribute access) — clever, fragile,
+  and it would silently drop a dependency the day someone reads a field indirectly. An
+  explicit list is auditable; a reviewer can check it against the code.
+
+**Consequence.** `STAGE_FIELDS` is now a thing that can be wrong: omit a field a stage
+really depends on and the stage hash will under-report a real change. It is a short,
+reviewable list next to the config it describes, and the Phase 1 rebuild verified the
+mechanism — adding two tokenizer fields left the data stage hash and both shard SHA-256s
+untouched.
+
+---
+
+## ADR-011 — Byte-level BPE
+
+**Context.** Phase 2's gate is a **lossless** encode→decode roundtrip, exact string match.
+The corpus also still contains 9 characters of unrepairable non-ASCII (ADR-009) and one
+document of Traditional Chinese.
+
+**Decision.** Byte-level BPE (GPT-2 lineage): the initial alphabet is all 256 bytes, and
+the pre-tokenizer/decoder pair is `ByteLevel` with `add_prefix_space=False`.
+
+**Rejected.**
+- *Character-level BPE with an `<unk>` token* — makes the roundtrip gate unpassable by
+  construction: any character outside the vocabulary decodes back as `<unk>`, so the exact
+  string match fails on exactly the rare inputs we most want to survive. Passing would then
+  require weakening the gate, which is backwards.
+- *A pretrained tokenizer (tiktoken / GPT-2's)* — the project's claim is a model built from
+  scratch; borrowing a 50k vocabulary trained on the open web would import someone else's
+  corpus statistics and waste most of the vocabulary on text this model will never see.
+- *`add_prefix_space=True`* — invents a leading space the decoder must strip, a classic
+  silent roundtrip break.
+
+**Consequence.** There is no OOV and no unknown token; every byte sequence roundtrips by
+construction rather than by luck. The cost is that rare non-ASCII costs several tokens
+each, which is the correct trade at 8k vocabulary — and the gate now tests a property the
+design guarantees, rather than hoping the corpus stayed clean.
+
+Verified: lossless roundtrip on 2,000 held-out validation documents (1,591,027 characters,
+zero mismatches), and separately on the adversarial set this corpus actually contains —
+`papier-mâché`, the mojibake'd emoji, the Traditional Chinese document, leading/trailing
+whitespace, and the empty string.
+
+---
+
+## ADR-012 — Train the tokenizer on a bounded subset, encode everything
+
+**Context.** The train shard is 1.84 GiB. BPE training holds counts in memory, and this
+build machine had ~1.8 GiB of RAM free when Phase 2 started. ADR-004 forbids absorbing a
+resource limit by changing the artifact's shape.
+
+**Decision.** `tokenizer_train_docs` (200,000) bounds how much text the BPE *trains* on.
+The entire corpus is still encoded. The number is measured, not guessed:
+`results/tokenizer_subset_sweep.md`, regenerable via `python -m src.tokenizer sweep`.
+
+**Rejected.**
+- *Train on the full corpus* — buys nothing measurable. Compression plateaus at 25,000
+  documents; across a 32x increase in training text the spread is 0.0007 tokens/word.
+- *Take the cheapest rung that plateaus (25,000)* — this is the interesting one. Judged on
+  compression alone, 25k is indistinguishable from 800k. But vocabulary **overlap** at 25k
+  is only 92.6%, versus 97.4% at 200k. Two tokenizers can compress identically while
+  disagreeing about which rare tokens earned a slot, and those disagreements are exactly
+  where a 14M model's vocabulary budget is won or lost. Measuring only the headline metric
+  would have picked the worse tokenizer for the right-looking reason.
+- *Shrinking `vocab_size` to fit RAM instead* — that is a silent model-shape change, which
+  ADR-004 exists to forbid.
+
+**Consequence.** One more config knob to defend, backed by a regenerable table. Training
+takes seconds rather than minutes, and the sweep doubles as the honest answer to "why 8k,
+and why that much text?" — a Phase 2 quiz question with evidence attached rather than an
+opinion.
+
+Also verified: training the BPE twice from the same seed and corpus produces a
+byte-identical vocabulary, so the tokenizer is part of the reproducible chain rather than
+a lucky artifact.

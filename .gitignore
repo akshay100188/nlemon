@@ -1,8 +1,17 @@
-# Regenerable from `python -m src.data` — never committed (spec §4.3).
+# Bulk corpus is regenerable from `python -m src.data` — never committed (§4.3).
 data/*.txt
 data/*.bin
 data/*.json
 !data/.gitkeep
+
+# ...but these three are small and are the audit trail, so they ship:
+#   tokenizer.json      part of the model — a checkpoint without it is unusable
+#   tokenizer_meta.json vocab size, separator id, shard token counts
+#   manifest.json       dataset sha, license, repair counts, shard hashes;
+#                       lets a reader verify our numbers without a 17-min build
+!data/tokenizer.json
+!data/tokenizer_meta.json
+!data/manifest.json
 
 # Weights. The tiny final checkpoint is force-added at release time.
 checkpoints/*.pt

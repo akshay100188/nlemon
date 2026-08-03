@@ -1,0 +1,81 @@
+{
+  "project_name": "nLemon-14",
+  "config_hash": "53f4919fceb7",
+  "data_stage_hash": "492b03756a4d",
+  "seed": 1337,
+  "dataset": {
+    "name": "roneneldan/TinyStories",
+    "requested_revision": "main",
+    "resolved_revision": "f54c09fd23315a6f9c86f9dc80f725de7d8f9c64",
+    "license": "cdla-sharing-1.0"
+  },
+  "splits": {
+    "train": {
+      "file": "train.txt",
+      "docs": 2119489,
+      "docs_read": 2119719,
+      "docs_available": 2119719,
+      "empty_docs_dropped": 230,
+      "docs_encoding_repaired": 130110,
+      "residual_suspicious_chars": {
+        "U+00E2": 3,
+        "U+20AC": 6
+      },
+      "residual_context": {
+        "U+00E2": [
+          "to make things. She made toys out of boxes and papier-m\u00e2ch\u00e9. One day she made a monster. She finished it and i",
+          "e of them. Then he wrote his aunt a note which said: 'I\u00e2\u00a4\u00ef\u00b8 U'.  The aunt was so happy when she saw the presen",
+          "e of them. Then he wrote his aunt a note which said: 'I\u00e2\u00a4\u00ef\u00b8 U'.  The aunt was so happy when she saw the presen"
+        ],
+        "U+20AC": [
+          "ake it out.  Jimmy asked his Mommy \"What's that noise?\u00e3\u20ac  Mommy answered, \"Oh, that's just your Daddy. He must",
+          "named Emily. \u00e5\u00b7\u00b4\u00e6\u00a9\u00e5'\u0152\u00e8\u2030\u00be\u00e7\u00b1\u00b3\u00e8\u0789\u5169\u00e5\u2026'\u7ae5\u5728\u4e00\u500b\u7389\u7c73\u00e7\"\u00b0\u00e8\u00a3\u00a1\u00e5\u00ba\u00a6\u00e9\u017d\u00e4\u00ba\"\u00e4\u00b8\u20ac\u00e6\u2022\u00b4\u00e5\u00a4\u00a9\u00e3\u20ac'  Ben had just promised Emily he would share "
+        ]
+      },
+      "truncated": false,
+      "chars": 1898588908,
+      "words": 364096658,
+      "bytes": 1930415222,
+      "words_per_doc": {
+        "min": 5,
+        "mean": 171.8,
+        "p50": 150,
+        "p95": 338,
+        "max": 959
+      },
+      "sha256": "c79228f4a2e67b330bdfc0f9bd4ba30b501e50825acad756d96a6a559a46f9c8"
+    },
+    "validation": {
+      "file": "val.txt",
+      "docs": 21990,
+      "docs_read": 21990,
+      "docs_available": 21990,
+      "empty_docs_dropped": 0,
+      "docs_encoding_repaired": 1235,
+      "residual_suspicious_chars": {},
+      "residual_context": {},
+      "truncated": false,
+      "chars": 19177260,
+      "words": 3680512,
+      "bytes": 19507444,
+      "words_per_doc": {
+        "min": 13,
+        "mean": 167.4,
+        "p50": 149,
+        "p95": 321,
+        "max": 820
+      },
+      "sha256": "afc8789078d9f7127e27cb26fc250b003c404767ba34f979668fc387ca47e0e4"
+    }
+  },
+  "peek": {
+    "file": "results/samples/corpus_peek.md",
+    "train_indices": [
+      694942,
+      1395819,
+      1534479
+    ]
+  },
+  "built_at_utc": "2026-07-31T19:17:49Z",
+  "build_seconds": 3011.2
+}

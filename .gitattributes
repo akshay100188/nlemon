@@ -1,0 +1,9 @@
+# Reproducibility depends on files being byte-identical across machines, and this
+# repo is developed on Windows where autocrlf would otherwise rewrite every
+# checkout. Pin LF in the repository *and* the working tree so a shard hash or a
+# tokenizer digest means the same thing on Linux, macOS and Windows.
+* text=auto eol=lf
+
+# Token shards and checkpoints are binary; never let git touch their bytes.
+*.bin binary
+*.pt  binary
