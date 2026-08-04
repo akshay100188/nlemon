@@ -1,8 +1,8 @@
 {
   "vocab_size_ok": true,
   "roundtrip": {
-    "docs_checked": 300,
-    "chars_checked": 257763,
+    "docs_checked": 200,
+    "chars_checked": 155196,
     "failures": 0,
     "examples": [],
     "passed": true

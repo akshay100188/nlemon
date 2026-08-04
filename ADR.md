@@ -308,3 +308,128 @@ opinion.
 Also verified: training the BPE twice from the same seed and corpus produces a
 byte-identical vocabulary, so the tokenizer is part of the reproducible chain rather than
 a lucky artifact.
+
+---
+
+## ADR-013 — Check the parameter count twice, from independent derivations
+
+**Context.** Phase 3's gate is "param count matches the ~14M budget". The obvious
+implementation sums `model.parameters()` and compares against 14M.
+
+**Decision.** Do that *and* derive the count analytically from the config in
+`expected_params()`, then require the two to agree exactly. The gate fails if they differ,
+even when both sit inside the budget.
+
+**Rejected.**
+- *Count the modules only* — this is a tautology dressed as a test. It proves the model is
+  self-consistent with whatever got built. If the output head were accidentally untied,
+  the count would rise by 3.07M and *still* be "the correct count for this model", and
+  still land inside a ±10% budget. The check would pass while the architecture was wrong.
+- *A hardcoded expected integer* — correct exactly once, then silently wrong the first
+  time anyone changes `d_model`. The formula tracks the config; a magic number does not.
+- *A wider tolerance instead of a formula* — tolerance hides structural mistakes, which are
+  the only kind this gate can catch.
+
+**Consequence.** Two derivations must be kept in step, so a real architecture change means
+editing the formula too. That is the point: it forces the change to be deliberate. Measured
+agreement: **13,817,856 counted == 13,817,856 analytic**, 98.70% of the 14M budget. Weight
+tying is asserted separately rather than inferred from the total.
+
+---
+
+## ADR-014 — The single-batch overfit does not test the causal mask
+
+**Context.** Phase 3's second gate is "overfit a single batch, loss drives to ~0, proving
+the wiring is correct". It is the standard nanoGPT-era sanity check.
+
+**Decision.** Keep it, but add a separate causal-mask test, because the overfit alone
+cannot detect a missing mask.
+
+**Why.** A model with **no** causal mask memorises a batch *faster*, not slower — it can
+read each answer off the following token. So a green overfit is fully compatible with
+broken masking. That bug does not show up in training at all; it shows up as a model that
+looks excellent on teacher-forced loss and emits gibberish the moment it generates
+autoregressively, several phases later, with nothing pointing back here.
+
+The mask test asserts the actual property: changing the token at position *t* must not move
+the logits at any position *< t*. It also asserts the logits *do* move from *t* onward,
+otherwise the first half would pass vacuously on a model that ignores its input.
+
+**Rejected.**
+- *Trusting `is_causal=True`* — it is one keyword away from silently doing nothing, and the
+  whole point of this project is checks that survive someone editing the code later.
+- *Inspecting the attention weights* — brittle, and it tests the implementation rather than
+  the property. The behavioural check survives a rewrite to a different attention kernel.
+
+**Consequence.** Measured: poking position 16 of 32 moves earlier logits by exactly `0.0`
+and later logits by `1.22`. The gate now covers a failure the specified gate would have
+missed.
+
+---
+
+## ADR-015 — Gate thresholds are chosen by their worst seed
+
+**Context.** Adding the causality check to the gate flipped the overfit result from 0.079
+to 0.593 and turned the gate red. The model had not changed at all — the new check consumed
+RNG before the overfit ran, so the model initialised differently.
+
+**Decision.** Two changes. `overfit_one_batch` reseeds at entry, so its verdict cannot
+depend on what ran before it. And the step count is chosen by measuring the **worst** of
+several seeds, not a single lucky run: `results/overfit_margin.md`, regenerable with
+`python -m src.model margin`.
+
+**Rejected.**
+- *Keep 300 steps and loosen the target* — the measurement says the worst seed at 300 steps
+  reaches 0.42, so the target would have to rise past 0.5 to be reliable. A gate that
+  accepts a loss of 0.5 as "drives to ~0" is not testing the thing it claims to test.
+- *Keep 300 steps and re-run until green* — the failure mode this project exists to avoid.
+- *Raise the learning rate instead* — measured and rejected on evidence: at 3e-3 the worst
+  seed is further from the target at every step count, and one run ended at 2.12 after
+  touching 0.14. It oscillates rather than converging.
+
+**Consequence.** The gate costs ~34 seconds instead of ~17. In exchange, its worst observed
+seed lands ~9x under the target instead of 4x over it. The general rule this establishes for
+later phases: a threshold reported from one seed is an anecdote, and the spread across seeds
+must be smaller than the distance to the threshold, or the gate is measuring luck.
+
+---
+
+## ADR-016 — Seeding is not reproducibility; strict determinism is
+
+**Context.** `utils/seed.py` has seeded python, numpy and torch and set the deterministic
+cuDNN flags since Phase 1, and the README has claimed "clone, one command per stage,
+identical scorecard" since the first commit. Phase 3 is the first stage that actually
+*trains* something, so it is the first chance to test that claim rather than assert it.
+
+It does not hold. Running the identical gate three times gave final losses of **0.01515,
+0.01034 and 0.01264**. The first-step loss was identical every time (9.11523), so
+initialisation was never the problem: the seed fixes the starting weights, and the backward
+pass then accumulates gradients with atomics whose ordering varies run to run. cuDNN's
+deterministic flag does not cover the fused attention kernel or cuBLAS reductions.
+
+Left alone, this makes the Phase 7 scorecard irreproducible by construction — every number
+in it would be downstream of a checkpoint that cannot be rebuilt exactly.
+
+**Decision.** `strict_determinism: true` in the config, wired into `set_seed`, which now
+calls `torch.use_deterministic_algorithms`. `CUBLAS_WORKSPACE_CONFIG` is set at *import*
+of `utils.seed`, because cuBLAS reads it once when the CUDA context is created and setting
+it later is silently too late.
+
+**Rejected.**
+- *Leave it and report mean ± spread* — honest, and a legitimate choice for a paper, but it
+  abandons the specific claim this project was built to defend. The claim is reproducible
+  artifacts, not reproducible-ish ones.
+- *Assume the seed was enough* — what we shipped in Phases 1 and 2. It was true there only
+  because neither stage trains anything: the corpus and the tokenizer are deterministic for
+  unrelated reasons, which made the gap invisible until now.
+- *Only turn it on for eval* — eval is forward-only and already deterministic. The
+  irreproducible artifact is the checkpoint, so determinism has to cover training.
+
+**Consequence.** Measured cost: **73,014 to 68,130 tokens/sec, about 7%**. Measured
+benefit: the gate is now bit-identical across runs (0.01075 / 0.00729, twice). Phase 4
+pretraining will pay that 7% for a checkpoint that can actually be rebuilt.
+
+The residual risk is that a later phase needs an op with no deterministic CUDA
+implementation, which will raise rather than silently drift. That is the correct failure
+mode: it forces the reproducibility claim to be re-stated in public rather than quietly
+dropped.

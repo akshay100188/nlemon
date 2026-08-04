@@ -282,7 +282,7 @@ def main() -> None:
     args = ap.parse_args()
 
     cfg = Config.load(args.config)
-    set_seed(cfg.seed)
+    set_seed(cfg.seed, strict=cfg.strict_determinism)
 
     print(f"{cfg.project_name}  ·  phase 1 · data")
     print(f"config hash : {cfg.hash()}")

@@ -1,0 +1,142 @@
+{
+  "model_stage_hash": "57fddccb6447",
+  "params": {
+    "counted": 13817856,
+    "analytic": 13817856,
+    "agree": true,
+    "budget": 14000000,
+    "within_budget": true,
+    "breakdown": {
+      "token_embedding": 3072000,
+      "positional_embedding": 98304,
+      "blocks_total": 10646784,
+      "per_block": 1774464,
+      "final_layernorm": 768,
+      "output_head_untied_cost": 3072000,
+      "total": 13817856
+    },
+    "non_embedding": 13719552
+  },
+  "weight_tying": true,
+  "causal_mask": {
+    "seq_len": 32,
+    "poked_position": 16,
+    "max_delta_before": 0.0,
+    "max_delta_from_poke": 1.2205026149749756,
+    "passed": true
+  },
+  "overfit": {
+    "steps": 600,
+    "first_loss": 9.11523,
+    "final_loss": 0.01075,
+    "min_loss": 0.00729,
+    "target": 0.1,
+    "random_baseline": 8.9872,
+    "passed": true,
+    "seconds": 36.1,
+    "history": [
+      [
+        1,
+        9.11523
+      ],
+      [
+        25,
+        5.2505
+      ],
+      [
+        50,
+        5.20844
+      ],
+      [
+        75,
+        5.20593
+      ],
+      [
+        100,
+        5.2043
+      ],
+      [
+        125,
+        4.91785
+      ],
+      [
+        150,
+        4.16066
+      ],
+      [
+        175,
+        3.22752
+      ],
+      [
+        200,
+        2.32118
+      ],
+      [
+        225,
+        1.53617
+      ],
+      [
+        250,
+        0.86997
+      ],
+      [
+        275,
+        0.3974
+      ],
+      [
+        300,
+        0.18877
+      ],
+      [
+        325,
+        0.0914
+      ],
+      [
+        350,
+        0.06144
+      ],
+      [
+        375,
+        0.04103
+      ],
+      [
+        400,
+        0.04846
+      ],
+      [
+        425,
+        0.02114
+      ],
+      [
+        450,
+        0.01904
+      ],
+      [
+        475,
+        0.0149
+      ],
+      [
+        500,
+        0.01534
+      ],
+      [
+        525,
+        0.01939
+      ],
+      [
+        550,
+        0.01499
+      ],
+      [
+        575,
+        0.00933
+      ],
+      [
+        600,
+        0.01075
+      ]
+    ],
+    "device": "NVIDIA GeForce RTX 3050 A Laptop GPU"
+  },
+  "passed": true
+}

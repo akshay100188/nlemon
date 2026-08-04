@@ -1,0 +1,86 @@
+{
+  "target": 0.1,
+  "seeds": [
+    1337,
+    7,
+    99
+  ],
+  "configured": {
+    "lr": 0.001,
+    "steps": 600
+  },
+  "rows": [
+    {
+      "lr": 0.001,
+      "steps": 300,
+      "per_seed_min_loss": [
+        0.18877,
+        0.15448,
+        0.01793
+      ],
+      "worst_min_loss": 0.18877,
+      "passes_target": false,
+      "margin_x": 0.53
+    },
+    {
+      "lr": 0.001,
+      "steps": 600,
+      "per_seed_min_loss": [
+        0.00729,
+        0.00758,
+        0.00259
+      ],
+      "worst_min_loss": 0.00758,
+      "passes_target": true,
+      "margin_x": 13.19
+    },
+    {
+      "lr": 0.001,
+      "steps": 1000,
+      "per_seed_min_loss": [
+        0.0031,
+        0.00409,
+        0.00172
+      ],
+      "worst_min_loss": 0.00409,
+      "passes_target": true,
+      "margin_x": 24.45
+    },
+    {
+      "lr": 0.003,
+      "steps": 300,
+      "per_seed_min_loss": [
+        0.19815,
+        0.5356,
+        0.12821
+      ],
+      "worst_min_loss": 0.5356,
+      "passes_target": false,
+      "margin_x": 0.19
+    },
+    {
+      "lr": 0.003,
+      "steps": 600,
+      "per_seed_min_loss": [
+        0.08182,
+        0.09478,
+        0.0478
+      ],
+      "worst_min_loss": 0.09478,
+      "passes_target": true,
+      "margin_x": 1.06
+    },
+    {
+      "lr": 0.003,
+      "steps": 1000,
+      "per_seed_min_loss": [
+        0.05387,
+        0.05693,
+        0.03671
+      ],
+      "worst_min_loss": 0.05693,
+      "passes_target": true,
+      "margin_x": 1.76
+    }
+  ]
+}

@@ -444,7 +444,7 @@ def main() -> None:
     args = ap.parse_args()
 
     cfg = Config.load(args.config)
-    set_seed(cfg.seed)
+    set_seed(cfg.seed, strict=cfg.strict_determinism)
 
     if args.command == "train":
         cmd_train(cfg)

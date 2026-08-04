@@ -20,7 +20,7 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 |---|---|---|
 | 1 | Scaffold + data | ✅ done |
 | 2 | Tokenizer (8k BPE) | ✅ done |
-| 3 | Architecture | ⬜ not started |
+| 3 | Architecture | ✅ done |
 | 4 | Pretraining | ⬜ not started |
 | 5 | SFT | ⬜ not started |
 | 6 | DPO | ⬜ not started |
@@ -44,7 +44,17 @@ Decoder-only GPT (nanoGPT lineage), pre-norm blocks, tied input/output embedding
 | context | 256 |
 | dropout | 0.1 |
 | precision | bf16 |
-| **params** | **~14M** |
+| **params** | **13,817,856** (98.7% of the 14M budget) |
+
+| where the parameters live | | |
+|---|---|---|
+| token embedding | 3,072,000 | 22.2% |
+| positional embedding | 98,304 | 0.7% |
+| 6 blocks × 1,774,464 | 10,646,784 | 77.1% |
+| final layernorm | 768 | 0.0% |
+
+The output head is tied to the token embedding, which saves a further 3,072,000
+parameters — 22% of the model — and ties "predicting a token" to "representing a token".
 
 Model shape is never changed to fit VRAM. Memory pressure is absorbed only by
 `micro_batch` / `grad_accum_steps` — see [ADR-004](ADR.md#adr-004--config--seed-as-the-single-source-of-truth).
@@ -71,11 +81,23 @@ python -m src.data                # Phase 1 — build the corpus      (~17 min)
 python -m src.tokenizer train     # Phase 2 — 8k byte-level BPE
 python -m src.tokenizer encode    # Phase 2 — corpus -> .bin shards
 python -m src.tokenizer check     # Phase 2 — the gate
+
+python -m src.model summary       # Phase 3 — parameter accounting
+python -m src.model check         # Phase 3 — the gate
 ```
 
 Every hyperparameter and the global seed live in
 [`configs/nlemon_14m.yaml`](configs/nlemon_14m.yaml). Nothing is hardcoded elsewhere,
 and every artifact records the hash of the config that produced it.
+
+**Determinism is enforced, not assumed**
+([ADR-016](ADR.md#adr-016--seeding-is-not-reproducibility-strict-determinism-is)).
+Seeding alone turned out not to be enough: the same gate run three times gave final losses
+of 0.01515 / 0.01034 / 0.01264. The seed fixes initialisation — the first-step loss was
+identical every time — but the backward pass accumulates with atomics whose order varies.
+`strict_determinism: true` makes training bit-reproducible for about 7% throughput. Without
+it, every number in the eventual scorecard would sit downstream of a checkpoint nobody
+could rebuild.
 
 **Two kinds of hash** ([ADR-010](ADR.md#adr-010--per-stage-config-hashes-alongside-the-global-one)).
 `config_hash` fingerprints the whole config and identifies a run. A `stage_hash`
@@ -153,6 +175,28 @@ compression is not the only thing at stake — two tokenizers can compress ident
 disagreeing on which rare tokens earned a slot. At 200k the vocabulary is 97.4% identical
 to one trained on 800k documents; at 25k it is only 92.6%.
 
+## Architecture gate
+
+Phase 3's gate is "param count matches the budget, and the model can overfit one batch."
+Both are implemented, plus two checks the specified gate would have missed.
+
+- **The parameter count is derived twice** — summed from the modules, and computed
+  analytically from the config — and the gate fails unless they agree exactly
+  ([ADR-013](ADR.md#adr-013--check-the-parameter-count-twice-from-independent-derivations)).
+  Counting the model's own tensors only proves it is self-consistent: an accidentally
+  untied head would still produce "the correct count for this model", and still land inside
+  a ±10% budget.
+- **The causal mask is tested separately**, because the overfit cannot test it
+  ([ADR-014](ADR.md#adr-014--the-single-batch-overfit-does-not-test-the-causal-mask)).
+  A model with no mask memorises a batch *faster* — it can read the answer off the next
+  token. The test asserts the real property: poking the token at position *t* moves the
+  logits at every position before it by exactly `0.0`, and moves them from *t* onward.
+- **The gate threshold is chosen by its worst seed**, not a lucky run
+  ([ADR-015](ADR.md#adr-015--gate-thresholds-are-chosen-by-their-worst-seed),
+  [results/overfit_margin.md](results/overfit_margin.md)). At 300 steps the spread across
+  seeds is wider than the distance to the target, so the same correct model passes or fails
+  on initialisation alone.
+
 ## Repo layout
 
 ```
@@ -162,7 +206,7 @@ nlemon/
 ├── src/
 │   ├── data.py               # corpus build           (Phase 1) ✅
 │   ├── tokenizer.py          # 8k byte-level BPE      (Phase 2) ✅
-│   ├── model.py              # GPT from scratch       (Phase 3)
+│   ├── model.py              # GPT from scratch       (Phase 3) ✅
 │   ├── train.py              # pretraining            (Phase 4)
 │   ├── sft.py                # instruction tuning     (Phase 5)
 │   ├── dpo.py                # preference tuning      (Phase 6)

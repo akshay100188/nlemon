@@ -5,6 +5,12 @@
 project_name: nLemon-14
 seed: 1337
 
+# Bit-reproducible training, not just reproducible initialisation (ADR-016).
+# The seed alone fixes the starting weights; the backward pass still accumulates
+# with atomics whose order varies, so identical runs drifted apart by the third
+# decimal. Costs ~7% throughput. Turn off only to measure that cost.
+strict_determinism: true
+
 # --- model shape (never changed to fit VRAM — see ADR-004) -------------------
 vocab_size: 8000
 d_model: 384
@@ -12,6 +18,8 @@ n_layers: 6
 n_heads: 6
 context_len: 256
 dropout: 0.1
+mlp_ratio: 4      # hidden width of each block's MLP, as a multiple of d_model
+bias: true        # bias terms in Linear layers (LayerNorm always has one)
 
 # --- training ---------------------------------------------------------------
 # VRAM fitting happens here and only here: lower micro_batch, raise grad_accum
@@ -39,6 +47,24 @@ peek_samples: 3             # stories dumped to results/samples/corpus_peek.md
 # guessed: see results/tokenizer_subset_sweep.md.
 tokenizer_train_docs: 200000
 tokenizer_min_frequency: 2
+
+# --- architecture gate (Phase 3) ---------------------------------------------
+# (a) the parameter budget the design is claimed to hit, and how far the real
+#     model may sit from it before that claim is wrong;
+# (b) the single-batch overfit that proves the wiring: a correctly wired model
+#     can memorise one batch, so if the loss does not collapse, something is
+#     disconnected. These are gate thresholds, so they live here rather than in
+#     an assert someone can quietly edit.
+param_budget: 14000000
+param_budget_tol: 0.10
+# 600 steps at 1e-3 is measured, not guessed: results/overfit_margin.md.
+# At 300 steps the worst of three seeds lands at 0.42 and the gate becomes a
+# coin flip; at 600 the worst is 0.011, ~9x under the target. Raising the lr to
+# 3e-3 is worse, not faster - it oscillates instead of converging.
+overfit_steps: 600
+overfit_target_loss: 0.1
+overfit_lr: 1.0e-3
+overfit_margin_seeds: [1337, 7, 99]
 
 # --- paths ------------------------------------------------------------------
 data_dir: data

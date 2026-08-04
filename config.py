@@ -35,6 +35,13 @@ STAGE_FIELDS: dict[str, tuple[str, ...]] = {
         "seed", "vocab_size", "doc_separator",
         "tokenizer_train_docs", "tokenizer_min_frequency",
     ),
+    # Model shape only. dropout is included because it changes the forward pass,
+    # but the gate thresholds are not: moving a threshold must not make the
+    # architecture look like it changed.
+    "model": (
+        "vocab_size", "d_model", "n_layers", "n_heads", "context_len",
+        "dropout", "mlp_ratio", "bias",
+    ),
 }
 
 
@@ -44,6 +51,7 @@ class Config:
 
     project_name: str = "nLemon-14"  # flows into every artifact + the scorecard
     seed: int = 1337
+    strict_determinism: bool = True
 
     # model
     vocab_size: int = 8000
@@ -52,6 +60,8 @@ class Config:
     n_heads: int = 6
     context_len: int = 256
     dropout: float = 0.1
+    mlp_ratio: int = 4
+    bias: bool = True
 
     # training
     micro_batch: int = 16
@@ -71,6 +81,14 @@ class Config:
     # tokenizer
     tokenizer_train_docs: int = 200_000  # bounds BPE *training*, not encoding
     tokenizer_min_frequency: int = 2
+
+    # architecture gate (Phase 3)
+    param_budget: int = 14_000_000
+    param_budget_tol: float = 0.10
+    overfit_steps: int = 600
+    overfit_target_loss: float = 0.1
+    overfit_lr: float = 1e-3
+    overfit_margin_seeds: tuple[int, ...] = (1337, 7, 99)
 
     # paths (relative to the repo root)
     data_dir: str = "data"
