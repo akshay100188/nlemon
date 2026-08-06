@@ -1,0 +1,35 @@
+{
+  "docs": 2000,
+  "known_words": 19446,
+  "band_percentiles": [
+    5,
+    95
+  ],
+  "bands": {
+    "repeated_4gram_rate": {
+      "low": 0.0,
+      "high": 0.033344,
+      "median": 0.0
+    },
+    "max_immediate_repeat_run": {
+      "low": 1.0,
+      "high": 2.0,
+      "median": 1.0
+    },
+    "mean_sentence_words": {
+      "low": 7.0667,
+      "high": 14.27335,
+      "median": 10.61325
+    },
+    "type_token_ratio": {
+      "low": 0.437974,
+      "high": 0.627483,
+      "median": 0.535813
+    },
+    "known_word_rate": {
+      "low": 1.0,
+      "high": 1.0,
+      "median": 1.0
+    }
+  }
+}

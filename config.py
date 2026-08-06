@@ -42,6 +42,20 @@ STAGE_FIELDS: dict[str, tuple[str, ...]] = {
         "vocab_size", "d_model", "n_layers", "n_heads", "context_len",
         "dropout", "mlp_ratio", "bias",
     ),
+    # Everything that changes the weights in base.pt. Includes the model fields
+    # (a different architecture is a different training run) and
+    # strict_determinism, which does not change the model's shape but does
+    # change its trained values — ADR-016 measured the drift. Excludes pure
+    # bookkeeping (log_interval, ckpt_interval): how often we write a line to a
+    # csv must not make the checkpoint look different.
+    "train": (
+        "seed", "strict_determinism",
+        "vocab_size", "d_model", "n_layers", "n_heads", "context_len",
+        "dropout", "mlp_ratio", "bias",
+        "micro_batch", "grad_accum_steps", "lr", "max_steps", "warmup_steps",
+        "weight_decay", "beta1", "beta2", "grad_clip", "min_lr_ratio",
+        "eval_iters",
+    ),
 }
 
 
@@ -69,6 +83,26 @@ class Config:
     lr: float = 3e-4
     max_steps: int = 20000
     warmup_steps: int = 1000
+    weight_decay: float = 0.1
+    beta1: float = 0.9
+    beta2: float = 0.95
+    grad_clip: float = 1.0
+    min_lr_ratio: float = 0.1
+    eval_interval: int = 500
+    eval_iters: int = 100
+    log_interval: int = 20
+    ckpt_interval: int = 2000
+
+    # Phase 4 gate
+    val_ppl_threshold: float = 8.0
+    coherence_ref_docs: int = 2000
+    coherence_vocab_docs: int = 100_000
+    coherence_band_low_pct: int = 5
+    coherence_band_high_pct: int = 95
+    coherence_samples: int = 16
+    coherence_new_tokens: int = 200
+    coherence_temperature: float = 0.8
+    coherence_top_k: int = 40
 
     # data
     dataset_name: str = "roneneldan/TinyStories"

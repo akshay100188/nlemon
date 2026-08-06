@@ -18,3 +18,7 @@ PyYAML==6.0.3
 # Repairs the ~757k double-encoded smart quotes that ship in the upstream
 # TinyStories text (ADR-009). Pure python, no transitive weight.
 ftfy==6.3.1
+
+# Sparse bigram counts for the perplexity floors the Phase 4 gate is judged
+# against (src/baselines.py). Only used there.
+scipy==1.16.3

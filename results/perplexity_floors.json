@@ -1,0 +1,19 @@
+{
+  "vocab_size": 8000,
+  "train_tokens": 465819316,
+  "val_tokens": 2000000,
+  "baselines": {
+    "uniform": {
+      "nll": 8.987197,
+      "perplexity": 8000.0
+    },
+    "unigram": {
+      "nll": 5.965904,
+      "perplexity": 389.9052
+    },
+    "bigram": {
+      "nll": 3.733229,
+      "perplexity": 41.8139
+    }
+  }
+}

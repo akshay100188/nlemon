@@ -1,0 +1,13 @@
+{
+  "project_name": "nLemon-14",
+  "config_hash": "ae5d595e507e",
+  "train_stage_hash": "ad70960ceb21",
+  "steps": 20000,
+  "tokens_seen": 327680000,
+  "best_val_loss": 1.648289,
+  "best_val_perplexity": 5.1981,
+  "params": 13817856,
+  "device": "NVIDIA GeForce RTX 3050 A Laptop GPU",
+  "elapsed_seconds": 7211.3,
+  "checkpoint": "checkpoints/base.pt"
+}

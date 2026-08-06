@@ -433,3 +433,109 @@ The residual risk is that a later phase needs an op with no deterministic CUDA
 implementation, which will raise rather than silently drift. That is the correct failure
 mode: it forces the reproducibility claim to be re-stated in public rather than quietly
 dropped.
+
+---
+
+## ADR-017 — The perplexity threshold is anchored to measured floors, and agreed first
+
+**Context.** Phase 4's gate is "validation perplexity below an agreed threshold". A number
+with nothing behind it is decoration: 8.0 sounds strict, but nobody reading the README
+knows whether it is.
+
+**Decision.** Measure what trivial predictors score on the same held-out shard
+(`src/baselines.py`), then set the bar as a stated multiple of the strongest one, and agree
+it **before** the training run finishes.
+
+Measured floors on 2,000,000 held-out tokens:
+
+| baseline | knows | perplexity |
+|---|---|---|
+| uniform | nothing | 8,000.00 |
+| unigram | which tokens are common | 389.91 |
+| bigram | the previous token only | 41.81 |
+
+Threshold agreed at **5.2x better than the bigram floor: perplexity <= 8.0**. Achieved:
+**5.1981**, i.e. 6.9x better than bigram and 64x better than unigram.
+
+**Rejected.**
+- *Pick a threshold after seeing the result* — the failure this project exists to avoid. The
+  bar was fixed while the run was at 10% and its outcome unknown; at that point the gate
+  could still have failed.
+- *"Below the bigram baseline"* — too weak to mean anything. A model that barely beats a
+  two-token lookup table has not learned to speak.
+- *An absolute number from the literature* — perplexity is not comparable across
+  tokenizers. Our 8,000-token vocabulary makes any figure from a 50k-vocab paper
+  meaningless here, which is exactly the sort of borrowed authority the ADR log exists to
+  refuse.
+
+**Consequence.** The claim is defensible in the specific form "6.9x better than a bigram
+model on the same held-out data with the same tokenizer", which a reader can check by
+running `python -m src.baselines`. The gate also **recomputes** perplexity from the
+checkpoint rather than reading `train_summary.json` — the summary is what the run *said*,
+and the gate should verify it independently (same reasoning as ADR-013).
+
+---
+
+## ADR-018 — Coherence bands come from the corpus, not from taste
+
+**Context.** The other half of Phase 4's gate is "samples are coherent little stories, not
+word salad". That is a human judgement and it stays one: the Product Owner reads
+`results/samples/base_samples.md` and calls it. But a purely human gate cannot be re-run,
+and Phase 5 needs a deterministic checker anyway (ADR-005), so the automatic half is built
+here.
+
+**Decision.** Measure five statistics on **real validation documents**, take the p5-p95
+band of each, and require the median over generated samples to fall inside it
+(`results/coherence_reference.md`). The question becomes falsifiable: *does this resemble
+the corpus?*
+
+Both edges are checked deliberately. Excess repetition is degenerate; **too little is also
+suspicious**, because real children's stories repeat names and phrases on purpose, and a
+model that never repeats is not imitating this corpus.
+
+**Rejected.**
+- *Hand-picked thresholds* — "repetition below 0.3" is one person's guess wearing the
+  costume of a measurement. Every number here is derived from the data it judges.
+- *A one-sided test* — would pass text that is statistically unlike the corpus in the
+  "better than real" direction, which for an imitation task is still wrong.
+- *Mean instead of median across samples* — one degenerate sample would drag the average
+  down and condemn fifteen good ones, or be averaged away by them. Per-sample detail is
+  recorded either way so a red result can be read rather than guessed at.
+- *LLM-as-judge* — already rejected in ADR-005 and still rejected.
+
+**Consequence.** Measured result at `base.pt`: all five metrics in band, e.g. repeated
+4-gram rate 0.0155 in [0.0000, 0.0333], mean sentence length 9.63 words in [7.07, 14.27].
+
+**Known weakness, stated rather than hidden:** `known_word_rate` has a degenerate band of
+[1.0000, 1.0000] — over 95% of real validation documents use only words that appear in the
+100,000-document known-word set, so the p5 and p95 edges collapse onto the same point. It
+passed cleanly here (the model emitted no out-of-corpus words at the median), but as a
+*band* it is a point test, and any single invented word at the median flips it. If a later
+phase needs to distinguish "invented a plausible name" from "emitted garbage", this metric
+needs a wider known-word set or a different formulation. It is recorded as a limitation
+now rather than discovered as a mystery later.
+
+---
+
+## ADR-019 — Finish the run rather than optimise the loader mid-flight
+
+**Context.** Throughput during pretraining was erratic: 71,000 tokens/sec when the OS page
+cache was warm, falling to ~22,000 once free RAM dropped from 6.7 GiB to 3.4 GiB. GPU
+utilisation at the low point was 40% at 11.6 W and 49 C — the GPU was idle, waiting for
+data. `ShardLoader` issues 64 random reads per optimizer step into an 888 MiB memmap, so
+once the shard stopped fitting in cache, random-access latency set the pace.
+
+**Decision.** Let the run finish. Record the cause and the fix without applying it.
+
+**Rejected.**
+- *Kill and restart with a batched or pre-shuffled loader* — would have discarded 8,500
+  completed steps to recover maybe an hour, and would have produced a checkpoint under a
+  different data-access order, invalidating the loss curve already written.
+- *Quietly not mention it* — the run took 120 minutes where ~70 was achievable. The honest
+  version of "trainable in hours on a 4GB laptop" includes why it was slower than it needed
+  to be.
+
+**Consequence.** 120 minutes for 327,680,000 tokens (0.70 epochs). The known fix, for
+whoever picks this up: draw each batch from a contiguous block, or shuffle the shard once at
+build time so sequential reads suffice. Phases 5 and 6 fine-tune on far less data, so this
+is not on their critical path — the reason it is an ADR rather than a task.

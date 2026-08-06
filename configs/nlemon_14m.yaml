@@ -30,6 +30,38 @@ lr: 3.0e-4
 max_steps: 20000
 warmup_steps: 1000
 
+# optimizer + schedule
+weight_decay: 0.1     # applied to matmul weights only, never to biases/LayerNorm
+beta1: 0.9
+beta2: 0.95
+grad_clip: 1.0
+min_lr_ratio: 0.1     # cosine floor, as a fraction of lr
+
+# training loop bookkeeping
+eval_interval: 500    # optimizer steps between validation passes
+eval_iters: 100       # batches averaged per validation pass
+log_interval: 20
+ckpt_interval: 2000
+
+# --- Phase 4 gate ------------------------------------------------------------
+# Agreed before the run, not fitted to it. Measured floors on held-out val:
+# uniform 8000, unigram 389.91, bigram 41.81 (results/perplexity_floors.md).
+# 8.0 is 5.2x better than the bigram floor - a bar that can actually fail.
+val_ppl_threshold: 8.0
+
+# The second half of the gate is "coherent little stories, not word salad".
+# The bands are not invented: the same statistics are measured on real corpus
+# documents and generated text has to land inside the corpus's own percentile
+# range. Precursor to the Phase 5 feature-checker (ADR-005).
+coherence_ref_docs: 2000        # real val docs used to build the reference bands
+coherence_vocab_docs: 100000    # train docs used to build the known-word set
+coherence_band_low_pct: 5
+coherence_band_high_pct: 95
+coherence_samples: 16           # generated continuations scored
+coherence_new_tokens: 200
+coherence_temperature: 0.8
+coherence_top_k: 40
+
 # --- data -------------------------------------------------------------------
 dataset_name: roneneldan/TinyStories
 dataset_revision: main      # resolved to an exact commit sha in data/manifest.json

@@ -21,7 +21,7 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 | 1 | Scaffold + data | ✅ done |
 | 2 | Tokenizer (8k BPE) | ✅ done |
 | 3 | Architecture | ✅ done |
-| 4 | Pretraining | ⬜ not started |
+| 4 | Pretraining | ✅ done |
 | 5 | SFT | ⬜ not started |
 | 6 | DPO | ⬜ not started |
 | 7 | Eval harness | ⬜ not started |
@@ -84,6 +84,12 @@ python -m src.tokenizer check     # Phase 2 — the gate
 
 python -m src.model summary       # Phase 3 — parameter accounting
 python -m src.model check         # Phase 3 — the gate
+
+python -m src.baselines           # Phase 4 — perplexity floors
+python -m src.train               # Phase 4 — pretrain to base.pt   (~2 h)
+python -m src.sample --gallery    # Phase 4 — reproducible samples
+python -m src.coherence reference # Phase 4 — corpus bands
+python -m src.coherence gate      # Phase 4 — the gate
 ```
 
 Every hyperparameter and the global seed live in
@@ -197,6 +203,52 @@ Both are implemented, plus two checks the specified gate would have missed.
   seeds is wider than the distance to the target, so the same correct model passes or fails
   on initialisation alone.
 
+## nLemon-14-base — it learned to speak
+
+327,680,000 tokens (0.70 epochs), 20,000 steps, 120 minutes on the 3050 A.
+
+| | |
+|---|---|
+| **val perplexity** | **5.1981** (loss 1.6483) |
+| gate threshold | ≤ 8.0, agreed before the run |
+| bigram floor | 41.81 → **6.9× better** |
+| unigram floor | 389.91 → 64× better |
+| uniform floor | 8,000 |
+
+The threshold is not a number I liked the look of. It is 5.2× the strongest trivial
+predictor measured on the same held-out shard with the same tokenizer
+([results/perplexity_floors.md](results/perplexity_floors.md),
+[ADR-017](ADR.md#adr-017--the-perplexity-threshold-is-anchored-to-measured-floors-and-agreed-first)) —
+and it was fixed while the run was at 10% and its outcome unknown. Perplexity across
+tokenizers is not comparable, so a figure borrowed from a 50k-vocab paper would have meant
+nothing here.
+
+**Curve:** [results/loss_curve.csv](results/loss_curve.csv) — train loss every 20 steps,
+validation every 500. Val loss fell 9.08 → 1.65 with no divergence between train and val,
+so nothing was memorised at 0.70 epochs.
+
+**Samples:** [results/samples/base_samples.md](results/samples/base_samples.md) — four
+fixed prompts, seeded, reproducible. They are recognisably little stories with dialogue and
+a narrative arc. The logic wobbles exactly where 14M parameters would predict: characters
+revisit places they just left, and objects change owners between paragraphs.
+
+**The coherence half of the gate is measured, not asserted.** Five statistics computed on
+real validation documents give a p5–p95 band, and generated text has to land inside it
+([ADR-018](ADR.md#adr-018--coherence-bands-come-from-the-corpus-not-from-taste)):
+
+| metric | generated (median) | corpus band |
+|---|---|---|
+| repeated 4-gram rate | 0.0155 | 0.0000 – 0.0333 |
+| max immediate repeat run | 1.0 | 1.0 – 2.0 |
+| mean sentence words | 9.63 | 7.07 – 14.27 |
+| type/token ratio | 0.5274 | 0.4380 – 0.6275 |
+| known-word rate | 1.0000 | 1.0000 – 1.0000 |
+
+Both edges of each band are checked on purpose: too much repetition is degenerate, and too
+*little* is also suspicious, because real children's stories repeat names deliberately. One
+of these metrics has a degenerate band and says so in the ADR rather than pretending
+otherwise.
+
 ## Repo layout
 
 ```
@@ -207,10 +259,12 @@ nlemon/
 │   ├── data.py               # corpus build           (Phase 1) ✅
 │   ├── tokenizer.py          # 8k byte-level BPE      (Phase 2) ✅
 │   ├── model.py              # GPT from scratch       (Phase 3) ✅
-│   ├── train.py              # pretraining            (Phase 4)
+│   ├── train.py              # pretraining            (Phase 4) ✅
+│   ├── baselines.py          # perplexity floors      (Phase 4) ✅
+│   ├── coherence.py          # deterministic proxy    (Phase 4) ✅
+│   ├── sample.py             # inference (temp/top-k) (Phase 4) ✅
 │   ├── sft.py                # instruction tuning     (Phase 5)
 │   ├── dpo.py                # preference tuning      (Phase 6)
-│   ├── sample.py             # inference (temp/top-k) (Phase 7)
 │   └── eval.py               # deterministic scorecard(Phase 7)
 ├── utils/  seed.py · device.py
 ├── data/         # .txt / .bin shards + manifest.json   (gitignored)
