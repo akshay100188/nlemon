@@ -54,9 +54,75 @@ STAGE_FIELDS: dict[str, tuple[str, ...]] = {
         "dropout", "mlp_ratio", "bias",
         "micro_batch", "grad_accum_steps", "lr", "max_steps", "warmup_steps",
         "weight_decay", "beta1", "beta2", "grad_clip", "min_lr_ratio",
+        # eval_iters is here but should not be (ADR-020): it changes the reported
+        # metric, not the weights. Moving it now would shift base.pt's recorded
+        # hash for no real change; it migrates to an eval stage in Phase 7.
         "eval_iters",
     ),
 }
+
+# Fields deliberately outside every stage hash, with the reason.
+#
+# STAGE_FIELDS is a thing that can be wrong by omission: forget to add a field a
+# stage depends on and its stage hash under-reports a real change, silently. This
+# turns that silence into an error — a new field must be classified as either
+# affecting some stage's output or explicitly not.
+STAGE_EXEMPT: dict[str, str] = {
+    "project_name": "display label; flows into artifacts but changes no output",
+    "data_dir": "path",
+    "ckpt_dir": "path",
+    "results_dir": "path",
+    "log_interval": "bookkeeping: how often a csv row is written",
+    "ckpt_interval": "bookkeeping",
+    "eval_interval": "bookkeeping: how often validation runs, not what it measures",
+    "val_ppl_threshold": "gate threshold; moving a bar must not make an artifact look changed",
+    "param_budget": "gate threshold",
+    "param_budget_tol": "gate threshold",
+    "overfit_steps": "gate threshold (Phase 3 wiring check, produces no artifact)",
+    "overfit_target_loss": "gate threshold",
+    "overfit_lr": "gate threshold",
+    "overfit_margin_seeds": "gate evidence sweep",
+    "coherence_ref_docs": "gate threshold",
+    "coherence_vocab_docs": "gate threshold",
+    "coherence_band_low_pct": "gate threshold",
+    "coherence_band_high_pct": "gate threshold",
+    "coherence_samples": "gate threshold",
+    "coherence_new_tokens": "gate threshold",
+    "coherence_temperature": "gate threshold",
+    "coherence_top_k": "gate threshold",
+}
+
+
+def assert_stage_coverage() -> None:
+    """Every config field is in a stage hash or explicitly exempt.
+
+    Also catches the reverse mistake: a stage or exemption naming a field that no
+    longer exists, which would silently narrow a hash.
+    """
+    known = {f.name for f in fields(Config)}
+    covered: set[str] = set().union(*STAGE_FIELDS.values())
+
+    unknown_in_stages = {
+        f"{stage}:{name}"
+        for stage, names in STAGE_FIELDS.items()
+        for name in names if name not in known
+    }
+    unknown_exempt = set(STAGE_EXEMPT) - known
+    unclassified = known - covered - set(STAGE_EXEMPT)
+
+    problems = []
+    if unclassified:
+        problems.append(
+            f"config field(s) {sorted(unclassified)} are in no stage hash and not "
+            f"listed in STAGE_EXEMPT. Add them to the stage(s) whose output they "
+            f"change, or to STAGE_EXEMPT with a reason."
+        )
+    if unknown_in_stages:
+        problems.append(f"STAGE_FIELDS names nonexistent field(s): {sorted(unknown_in_stages)}")
+    if unknown_exempt:
+        problems.append(f"STAGE_EXEMPT names nonexistent field(s): {sorted(unknown_exempt)}")
+    if problems:
+        raise ValueError("stage-hash coverage: " + " | ".join(problems))
 
 
 @dataclass(frozen=True)
@@ -164,6 +230,7 @@ class Config:
         return cfg
 
     def validate(self) -> None:
+        assert_stage_coverage()  # fail at load, not at the phase that needs it
         _ = self.head_dim  # raises if d_model is not divisible by n_heads
         if self.warmup_steps > self.max_steps:
             raise ValueError("warmup_steps must not exceed max_steps")

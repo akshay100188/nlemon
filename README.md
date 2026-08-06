@@ -90,7 +90,19 @@ python -m src.train               # Phase 4 — pretrain to base.pt   (~2 h)
 python -m src.sample --gallery    # Phase 4 — reproducible samples
 python -m src.coherence reference # Phase 4 — corpus bands
 python -m src.coherence gate      # Phase 4 — the gate
+
+python -m src.verify_docs                    # prose ratios == measured artifacts
+python scripts/check_encoding.py --install    # encoding guard as a pre-commit hook
 ```
+
+Two guards exist because two mistakes actually happened, not because they seemed
+prudent. `src/verify_docs.py` checks every "Nx better" in the docs against
+`results/perplexity_floors.json`, after a stale denominator shipped a wrong ratio
+([ADR-020](ADR.md#adr-020--the-gate-metric-was-underpowered-and-the-published-ratio-must-be-the-conservative-one)).
+`scripts/check_encoding.py` blocks commits containing mojibake or a BOM, after
+PowerShell's `Get-Content | Set-Content` corrupted this repo's own source twice — in a
+project whose Phase 1 headline is repairing 757,666 mojibake sequences. Markdown is exempt
+from the mojibake check alone, because the ADRs quote the corrupted bytes on purpose.
 
 Every hyperparameter and the global seed live in
 [`configs/nlemon_14m.yaml`](configs/nlemon_14m.yaml). Nothing is hardcoded elsewhere,
@@ -209,19 +221,35 @@ Both are implemented, plus two checks the specified gate would have missed.
 
 | | |
 |---|---|
-| **val perplexity** | **5.1981** (loss 1.6483) |
-| gate threshold | ≤ 8.0, agreed before the run |
-| bigram floor | 41.81 → **6.9× better** |
-| unigram floor | 389.91 → 64× better |
-| uniform floor | 8,000 |
+| **val perplexity (gate metric)** | **5.1981** (loss 1.6483) |
+| gate threshold | ≤ 8.0, agreed before any result existed |
+| val perplexity on 1,992,060 identical tokens | 5.4636 (loss 1.6981) |
+| bigram floor 41.81 | → **7.65x better** |
+| unigram floor 389.91 | → 71.36x better |
+| uniform floor 8,000 | → 1,464.24x better |
 
-The threshold is not a number I liked the look of. It is 5.2× the strongest trivial
-predictor measured on the same held-out shard with the same tokenizer
-([results/perplexity_floors.md](results/perplexity_floors.md),
-[ADR-017](ADR.md#adr-017--the-perplexity-threshold-is-anchored-to-measured-floors-and-agreed-first)) —
-and it was fixed while the run was at 10% and its outcome unknown. Perplexity across
-tokenizers is not comparable, so a figure borrowed from a 50k-vocab paper would have meant
-nothing here.
+**Why there are two perplexities.** The gate metric averages 100 batches of random windows
+(409,600 tokens) — the procedure fixed before the run. The ratios use a stricter
+measurement: the model scored on the **identical token array** as the baselines, so
+numerator and denominator come from the same data
+([results/perplexity_floors.md](results/perplexity_floors.md), regenerable with
+`python -m src.baselines --with-model checkpoints/base.pt`).
+
+That stricter number is *worse* (5.4636 vs 5.1981) and it is the one the ratios use, because
+a headline should not rest on the friendlier of two measurements. The gap is sampling noise
+plus subset: at `eval_iters: 100` the estimate moves between 5.198 and 5.280 across loader
+seeds, and 5.1981 sat at the optimistic edge; the low-variance estimate over 4.1M tokens is
+5.2680. Every figure clears ≤ 8.0, so the verdict never depended on the choice — but Phase
+7's scorecard needs a large fixed evaluation set rather than 100 random batches, recorded
+as a requirement in
+[ADR-020](ADR.md#adr-020--the-gate-metric-was-underpowered-and-the-published-ratio-must-be-the-conservative-one).
+
+The threshold itself is not a number I liked the look of. It is 5.2 times the strongest
+trivial predictor, measured on the same held-out shard with the same tokenizer
+([ADR-017](ADR.md#adr-017--the-perplexity-threshold-is-anchored-to-measured-floors-and-agreed-first)).
+All four figures above are per-token negative log-likelihood under our own 8,000-token BPE:
+perplexity is not comparable across tokenizers, and a word-level baseline against a
+token-level model would silently change what the ratio means.
 
 **Curve:** [results/loss_curve.csv](results/loss_curve.csv) — train loss every 20 steps,
 validation every 500. Val loss fell 9.08 → 1.65 with no divergence between train and val,
@@ -266,7 +294,8 @@ nlemon/
 │   ├── sft.py                # instruction tuning     (Phase 5)
 │   ├── dpo.py                # preference tuning      (Phase 6)
 │   └── eval.py               # deterministic scorecard(Phase 7)
-├── utils/  seed.py · device.py
+├── utils/  seed.py · device.py · io.py
+├── scripts/check_encoding.py # encoding guard (pre-commit hook)
 ├── data/         # .txt / .bin shards + manifest.json   (gitignored)
 ├── checkpoints/  # base.pt · sft.pt · dpo.pt            (gitignored)
 ├── results/      # loss_curve.csv · scorecard.json · samples/

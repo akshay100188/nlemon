@@ -73,12 +73,68 @@ def bigram_nll(train: np.ndarray, val: np.ndarray, vocab: int,
     return float(-np.log(np.maximum(p, 1e-12)).mean())
 
 
+def model_nll(cfg: Config, val: np.ndarray, checkpoint: str) -> dict:
+    """Score the checkpoint on the *same* tokens the baselines just used.
+
+    The gate's val perplexity comes from random 256-token windows; the baselines
+    read a contiguous prefix. Both are per-token BPE negative log-likelihood on
+    val.bin, but they are different subsets, so a ratio between them is only
+    approximately apples-to-apples. This scores the model on exactly the array
+    passed in, so "N times better than bigram" has one denominator and one
+    numerator drawn from identical data.
+
+    Non-overlapping windows: the first token of each window is predicted with no
+    context, which slightly handicaps the model (1 token in context_len). The
+    ratio it produces is therefore conservative.
+    """
+    import torch
+
+    from src.sample import load_checkpoint
+    from utils.device import probe
+
+    dev = probe()
+    model, _ = load_checkpoint(REPO_ROOT / checkpoint, dev.device)
+    ctx = cfg.context_len
+    usable = (val.size // ctx) * ctx
+    windows = np.asarray(val[:usable], dtype=np.int64).reshape(-1, ctx)
+
+    total_nll = 0.0
+    total_tokens = 0
+    batch = cfg.micro_batch
+    with torch.no_grad():
+        for start in range(0, windows.shape[0], batch):
+            chunk = windows[start:start + batch]
+            x = torch.from_numpy(chunk[:, :-1]).to(dev.device)
+            y = torch.from_numpy(chunk[:, 1:]).to(dev.device)
+            with torch.autocast(device_type=dev.device.type, dtype=dev.dtype,
+                                enabled=dev.device.type == "cuda"):
+                logits, _ = model(x)
+            # sum, not mean, so windows of differing size cannot skew the average
+            nll = torch.nn.functional.cross_entropy(
+                logits.reshape(-1, logits.size(-1)).float(),
+                y.reshape(-1), reduction="sum")
+            total_nll += float(nll.item())
+            total_tokens += int(y.numel())
+
+    mean_nll = total_nll / total_tokens
+    return {
+        "checkpoint": checkpoint,
+        "nll": round(mean_nll, 6),
+        "perplexity": round(math.exp(mean_nll), 4),
+        "tokens_scored": total_tokens,
+        "windows": int(windows.shape[0]),
+        "note": "non-overlapping windows; first token of each has no context",
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Perplexity floors for the Phase 4 gate.")
     ap.add_argument("--config", default=None)
     ap.add_argument("--val-tokens", type=int, default=2_000_000,
                     help="cap on validation tokens scored (0 = all)")
     ap.add_argument("--skip-bigram", action="store_true")
+    ap.add_argument("--with-model", metavar="CKPT", default=None,
+                    help="also score a checkpoint on the identical tokens")
     args = ap.parse_args()
 
     cfg = Config.load(args.config)
@@ -118,11 +174,33 @@ def main() -> None:
         except ImportError:
             print("scipy not installed - skipping the bigram floor\n")
 
-    print(f"{'baseline':<12}{'NLL':>10}{'perplexity':>14}")
-    print("-" * 36)
+    if args.with_model:
+        results["model"] = model_nll(cfg, val, args.with_model)
+
+    model_ppl = results.get("model", {}).get("perplexity")
+    width = 54 if model_ppl else 36
+    print(f"{'baseline':<12}{'NLL':>10}{'perplexity':>14}{'model is':>18}")
+    print("-" * width)
     for name, v in results["baselines"].items():
-        print(f"{name:<12}{v['nll']:>10.4f}{v['perplexity']:>14,.2f}")
-    print("-" * 36)
+        ratio = f"{v['perplexity'] / model_ppl:,.2f}x better" if model_ppl else ""
+        print(f"{name:<12}{v['nll']:>10.4f}{v['perplexity']:>14,.2f}{ratio:>18}")
+    if model_ppl:
+        m = results["model"]
+        scored = f"{m['tokens_scored']:,} tok"
+        print("-" * width)
+        print(f"{cfg.project_name:<12}{m['nll']:>10.4f}{m['perplexity']:>14,.4f}"
+              f"{scored:>18}")
+        # Ratios are computed and recorded here so nobody has to derive them by
+        # hand in prose. That is exactly how a stale denominator got shipped.
+        results["ratios_vs_model"] = {
+            name: round(v["perplexity"] / model_ppl, 4)
+            for name, v in results["baselines"].items()
+        }
+    print("-" * width)
+    if model_ppl:
+        print("\nModel and baselines are scored on the identical token array, so "
+              "each ratio\nhas one numerator and one denominator drawn from the "
+              "same data.")
 
     lines = [
         "# Perplexity floors",
@@ -132,8 +210,9 @@ def main() -> None:
         "score; the trained model has to beat them before *learned to speak* "
         "means anything.",
         "",
-        "| baseline | what it knows | NLL | perplexity |",
-        "|---|---|---|---|",
+        "| baseline | what it knows | NLL | perplexity |"
+        + (" nLemon-14 is |" if model_ppl else ""),
+        "|---|---|---|---|" + ("---|" if model_ppl else ""),
     ]
     knows = {
         "uniform": "nothing at all",
@@ -141,8 +220,31 @@ def main() -> None:
         "bigram": "the previous token only",
     }
     for name, v in results["baselines"].items():
-        lines.append(f"| {name} | {knows.get(name, '')} | {v['nll']:.4f} | "
-                     f"{v['perplexity']:,.2f} |")
+        row = (f"| {name} | {knows.get(name, '')} | {v['nll']:.4f} | "
+               f"{v['perplexity']:,.2f} |")
+        if model_ppl:
+            row += f" **{v['perplexity'] / model_ppl:,.2f}x better** |"
+        lines.append(row)
+    if model_ppl:
+        m = results["model"]
+        lines += [
+            "",
+            f"**{cfg.project_name}: NLL {m['nll']:.4f}, perplexity "
+            f"{m['perplexity']:,.4f}** over {m['tokens_scored']:,} of these same "
+            f"tokens.",
+            "",
+            "Model and baselines are scored on the **identical token array** here, "
+            "so the ratios have one numerator and one denominator drawn from the "
+            "same data. All figures are per-token negative log-likelihood under "
+            "the same 8,000-token BPE — perplexity is not comparable across "
+            "tokenizers, so a number from a different vocabulary would not belong "
+            "in this table.",
+            "",
+            f"The model is scored on non-overlapping {cfg.context_len}-token "
+            "windows, so the first token of each window is predicted with no "
+            "context. That handicaps the model slightly, which makes these ratios "
+            "conservative.",
+        ]
     lines += ["", "Generated by `python -m src.baselines`."]
     out = write_text(REPO_ROOT / cfg.results_dir / "perplexity_floors.md",
                      "\n".join(lines))

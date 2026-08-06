@@ -454,13 +454,23 @@ Measured floors on 2,000,000 held-out tokens:
 | unigram | which tokens are common | 389.91 |
 | bigram | the previous token only | 41.81 |
 
-Threshold agreed at **5.2x better than the bigram floor: perplexity <= 8.0**. Achieved:
-**5.1981**, i.e. 6.9x better than bigram and 64x better than unigram.
+Threshold agreed at **5.2 times the bigram floor: perplexity <= 8.0**. Achieved: **5.1981**
+on the gate metric, **5.4636** on the identical token array the baselines use — **7.65x
+better than bigram**, 71.36x better than unigram, 1,464.24x better than uniform.
+
+**Exact timing of the agreement, because "pre-registered" is doing real work here.** The
+bar was *not* fixed before step 0, and the record should not imply it was. The order was:
+measure the floors, run a 60-step pilot (validation perplexity 154.6), launch the full run,
+then propose and agree the bar — all inside a few minutes. The run was therefore already
+underway when the threshold was set. What carries the claim is that **no result from the
+full run informed the number**: the only validation figure in hand was 154.6 from the
+pilot, no eval from the real run had been read, and the bar was derived from the measured
+floors rather than from an observed trajectory. The gate did not cross 8.0 until step
+3,000, so it was live for the first 15% of training. The honest phrasing is "fixed before
+any result existed", not "fixed before step 0".
 
 **Rejected.**
-- *Pick a threshold after seeing the result* — the failure this project exists to avoid. The
-  bar was fixed while the run was at 10% and its outcome unknown; at that point the gate
-  could still have failed.
+- *Pick a threshold after seeing the result* — the failure this project exists to avoid.
 - *"Below the bigram baseline"* — too weak to mean anything. A model that barely beats a
   two-token lookup table has not learned to speak.
 - *An absolute number from the literature* — perplexity is not comparable across
@@ -468,11 +478,16 @@ Threshold agreed at **5.2x better than the bigram floor: perplexity <= 8.0**. Ac
   meaningless here, which is exactly the sort of borrowed authority the ADR log exists to
   refuse.
 
-**Consequence.** The claim is defensible in the specific form "6.9x better than a bigram
-model on the same held-out data with the same tokenizer", which a reader can check by
-running `python -m src.baselines`. The gate also **recomputes** perplexity from the
-checkpoint rather than reading `train_summary.json` — the summary is what the run *said*,
-and the gate should verify it independently (same reasoning as ADR-013).
+**Consequence.** The claim is defensible in the specific form "7.65x better than a bigram
+model on the identical held-out tokens with the same tokenizer", checkable with
+`python -m src.baselines --with-model checkpoints/base.pt`. Every figure in that table is
+per-token negative log-likelihood over the same BPE, which is the only way the ratio means
+what it says: a word-level baseline against a token-level model would compare different
+denominators and inflate the result.
+
+The gate also **recomputes** perplexity from the checkpoint rather than reading
+`train_summary.json` — the summary is what the run *said*, and the gate should verify it
+independently (same reasoning as ADR-013).
 
 ---
 
@@ -539,3 +554,61 @@ once the shard stopped fitting in cache, random-access latency set the pace.
 whoever picks this up: draw each batch from a contiguous block, or shuffle the shard once at
 build time so sequential reads suffice. Phases 5 and 6 fine-tune on far less data, so this
 is not on their critical path — the reason it is an ADR rather than a task.
+
+---
+
+## ADR-020 — The gate metric was underpowered, and the published ratio must be the conservative one
+
+**Context.** Review of the Phase 4 write-up caught a wrong ratio: the README stated a
+bigram improvement of 6.9 when 41.81 / 5.1981 = 8.04. The cause was a **stale denominator**
+— the ratios were worked out by hand during a progress update, when validation perplexity
+was 6.097 at step 8,000, and carried into the final prose without being recomputed against
+the finished number. Both published ratios understated the model.
+
+Chasing the correct denominator surfaced a second, more interesting problem: there is more
+than one defensible value.
+
+| measurement | tokens | val perplexity |
+|---|---|---|
+| gate as pre-registered, 100 batches, loader seed 1338 | 409,600 | **5.1981** |
+| same setting, loader seed 1339 | 409,600 | 5.2796 |
+| same setting, loader seed 1340 | 409,600 | 5.2664 |
+| random windows, 500 batches | 2,048,000 | 5.2635 |
+| random windows, 1,000 batches | 4,096,000 | 5.2680 |
+| contiguous 2M prefix, identical tokens to the baselines | 1,992,060 | 5.4636 |
+
+`eval_iters: 100` carries roughly ±0.04 perplexity of sampling noise, and the gate's 5.1981
+sat at the **optimistic edge of its own spread**. Not wrong — it is the pre-registered
+procedure run honestly — but not a number to build a headline ratio on.
+
+**Decision.** Three things.
+
+1. Published ratios use the model scored on the **identical token array** as the baselines
+   (`--with-model`), giving **7.65x better than bigram**. That is the *worst* of the
+   candidate numbers, and it is the one that ships.
+2. Ratios are computed in code into `perplexity_floors.{md,json}` and verified against the
+   prose by `python -m src.verify_docs`. Hand arithmetic in narration is exactly how the
+   stale denominator survived, so narration no longer gets to do arithmetic.
+3. The gate metric stays as pre-registered at `eval_iters: 100`. Raising it now would be
+   changing the measurement after seeing the result — the sin this entry exists to catch —
+   and it would move `train_stage_hash`, making `base.pt` look stale over a parameter that
+   does not affect a single weight.
+
+**Rejected.**
+- *Publish 5.1981 with the corrected ratio of 8.04* — arithmetically right, but it puts the
+  friendliest of six measurements in the headline.
+- *Silently swap in the conservative number* — the gap between measurements is itself the
+  finding; burying it would waste it.
+- *Re-run the gate with more batches and publish that* — post-hoc measurement changes break
+  pre-registration even when they make the result look worse.
+
+**Consequence.** The published claim moves from an incorrect 6.9 to a correct and
+conservative 7.65, and every candidate figure clears the ≤ 8.0 bar, so the verdict never
+depended on the choice. Two follow-ups are now on the record:
+
+- **Phase 7's scorecard must use a large fixed evaluation set**, not 100 random batches.
+  Reproducible-by-seed is not the same as low-variance, and a scorecard needs both.
+- **`eval_iters` does not belong in `STAGE_FIELDS["train"]`.** It changes the reported
+  metric, not the weights, so it belongs to an eval stage. Left in place for now because
+  editing the field list would move `base.pt`'s recorded hash for no real change; the fix
+  lands when Phase 7 introduces an `eval` stage.

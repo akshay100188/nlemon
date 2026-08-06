@@ -15,5 +15,18 @@
       "nll": 3.733229,
       "perplexity": 41.8139
     }
+  },
+  "model": {
+    "checkpoint": "checkpoints/base.pt",
+    "nll": 1.698101,
+    "perplexity": 5.4636,
+    "tokens_scored": 1992060,
+    "windows": 7812,
+    "note": "non-overlapping windows; first token of each has no context"
+  },
+  "ratios_vs_model": {
+    "uniform": 1464.236,
+    "unigram": 71.3642,
+    "bigram": 7.6532
   }
 }
