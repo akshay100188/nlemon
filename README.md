@@ -290,18 +290,31 @@ revisit places they just left, and objects change owners between paragraphs.
 real validation documents give a p5–p95 band, and generated text has to land inside it
 ([ADR-018](ADR.md#adr-018--coherence-bands-come-from-the-corpus-not-from-taste)):
 
-| metric | generated (median) | corpus band |
-|---|---|---|
-| repeated 4-gram rate | 0.0155 | 0.0000 – 0.0333 |
-| max immediate repeat run | 1.0 | 1.0 – 2.0 |
-| mean sentence words | 9.63 | 7.07 – 14.27 |
-| type/token ratio | 0.5274 | 0.4380 – 0.6275 |
-| known-word rate | 1.0000 | 1.0000 – 1.0000 |
+| metric | statistic | generated | corpus band |
+|---|---|---|---|
+| repeated 4-gram rate | median | 0.0155 | 0.0000 – 0.0333 |
+| max immediate repeat run | median | 1.0 | 1.0 – 2.0 |
+| mean sentence words | median | 9.63 | 7.07 – 14.27 |
+| type/token ratio | median | 0.5274 | 0.4380 – 0.6275 |
+| out-of-vocabulary rate | pooled, bootstrapped | 0.0000 | 0.0000 – 0.0021 |
+| OOV plausibility | pooled, bootstrapped | n/a — invents nothing | -2.7517 – -1.8522 |
 
 Both edges of each band are checked on purpose: too much repetition is degenerate, and too
-*little* is also suspicious, because real children's stories repeat names deliberately. One
-of these metrics has a degenerate band and says so in the ADR rather than pretending
-otherwise.
+*little* is also suspicious, because real children's stories repeat names deliberately. The
+[decoding sweep](results/decoding_sweep.md) shows both failures happening — cold sampling
+loops, hot sampling invents words — which is the argument for a two-sided band with the
+evidence attached.
+
+The last two metrics replaced a degenerate one
+([ADR-022](ADR.md#adr-022--rare-events-get-pooled-and-bootstrapped-not-medianed)).
+`known_word_rate` had a band of exactly [1.0, 1.0], because over 95% of real documents
+contain no unknown words, so its p5 and p95 collapsed to a point. It passed, and it could
+never have failed for the right reason. Out-of-vocabulary words are rare, so they are now
+pooled across the whole sample set and their band bootstrapped from equal-sized groups of
+real documents. And because membership cannot distinguish an invented name from garbage —
+both are unknown — plausibility is scored by character trigram: invented names like
+`hoppity` land at -2.23 and inside the band, garbage like `bcdfghj` at -4.27 and far
+outside.
 
 ## Repo layout
 

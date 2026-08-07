@@ -87,9 +87,14 @@ STAGE_EXEMPT: dict[str, str] = {
     "coherence_band_low_pct": "gate threshold",
     "coherence_band_high_pct": "gate threshold",
     "coherence_samples": "gate threshold",
+    "coherence_bootstrap": "gate threshold",
     "coherence_new_tokens": "gate threshold",
-    "coherence_temperature": "gate threshold",
-    "coherence_top_k": "gate threshold",
+    "coherence_temperature": "decoding knob; changes what the model says, not what it knows",
+    "coherence_top_k": "decoding knob; changes what the model says, not what it knows",
+    "decode_sweep_temperatures": "evidence sweep for the pinned decoding pair",
+    "decode_sweep_top_k": "evidence sweep",
+    "decode_sweep_samples": "evidence sweep",
+    "decode_sweep_new_tokens": "evidence sweep",
 }
 
 
@@ -166,9 +171,16 @@ class Config:
     coherence_band_low_pct: int = 5
     coherence_band_high_pct: int = 95
     coherence_samples: int = 16
+    coherence_bootstrap: int = 400
     coherence_new_tokens: int = 200
     coherence_temperature: float = 0.8
     coherence_top_k: int = 40
+
+    # decoding sweep (Phase 4 -> pins decoding for Phase 5/6 comparisons)
+    decode_sweep_temperatures: tuple[float, ...] = (0.2, 0.5, 0.7, 0.8, 0.9, 1.1, 1.4)
+    decode_sweep_top_k: tuple[int, ...] = (0, 20, 40)
+    decode_sweep_samples: int = 6
+    decode_sweep_new_tokens: int = 160
 
     # data
     dataset_name: str = "roneneldan/TinyStories"

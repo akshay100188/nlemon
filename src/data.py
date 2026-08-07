@@ -58,12 +58,18 @@ RESIDUE: tuple[tuple[str, str], ...] = (
     (chr(0x200B), ""),                 # zero-width space
     (chr(0x00AD), ""),                 # soft hyphen
     (chr(0xFFFD), ""),                 # replacement char: the byte is already gone
-    # Orphaned mojibake prefix. U+0080..U+00BF encode to UTF-8 as C2 xx, so their
-    # mojibake is 'A-circumflex' + the character. The rules above rewrite the
-    # second half (no-break space, soft hyphen), which would strand the first —
-    # 'he<C2>'d', 'loved.<C2>'. Audited every occurrence in the 1.84 GiB shard:
-    # all 9 are stranded prefixes, none is a real capital A-circumflex. Runs last
-    # so it only ever sees what the pair rules left behind.
+    # Orphaned mojibake prefix, left behind when 'A-circumflex' is followed by
+    # ASCII: 'wasn<C2>'t', 'loved.<C2>'. ftfy cannot read those as mojibake (C2
+    # plus an ASCII byte is not a valid pair) so it leaves them, and every one of
+    # the 9 occurrences audited in the 1.84 GiB shard was of this kind - none was
+    # a real capital A-circumflex.
+    #
+    # Position in this tuple does not matter. An earlier comment here claimed the
+    # rule had to run last because the no-break-space and soft-hyphen rules would
+    # strand the prefix; that was wrong. ftfy repairs those two pairs before
+    # RESIDUE runs, so they never reach these rules at all. Verified in
+    # tests/test_residue.py: 400 permutations, identical output, no rule pattern
+    # contains another.
     (chr(0x00C2), ""),
 )
 

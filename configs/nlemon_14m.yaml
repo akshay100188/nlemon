@@ -58,9 +58,23 @@ coherence_vocab_docs: 100000    # train docs used to build the known-word set
 coherence_band_low_pct: 5
 coherence_band_high_pct: 95
 coherence_samples: 16           # generated continuations scored
+coherence_bootstrap: 400        # resampled corpus groups behind the pooled bands
 coherence_new_tokens: 200
 coherence_temperature: 0.8
 coherence_top_k: 40
+
+# --- decoding ----------------------------------------------------------------
+# Sampling knobs change what the model *says* without changing what it knows.
+# Before SFT, that matters: comparing base to sft under different decoding would
+# measure the decoder, not the fine-tune. These are swept once against the corpus
+# bands (results/decoding_sweep.md) so the pinned pair below is a measured choice,
+# and every cross-stage comparison from Phase 5 on uses it unchanged.
+# The pinned pair below must appear in this grid; the sweep asserts it, because
+# a sweep that never measures the value it is justifying justifies nothing.
+decode_sweep_temperatures: [0.2, 0.5, 0.7, 0.8, 0.9, 1.1, 1.4]
+decode_sweep_top_k: [0, 20, 40]     # 0 = no truncation
+decode_sweep_samples: 6
+decode_sweep_new_tokens: 160
 
 # --- data -------------------------------------------------------------------
 dataset_name: roneneldan/TinyStories

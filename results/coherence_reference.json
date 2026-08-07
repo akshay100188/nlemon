@@ -5,6 +5,8 @@
     5,
     95
   ],
+  "bootstrap_groups": 400,
+  "bootstrap_group_size": 16,
   "bands": {
     "repeated_4gram_rate": {
       "low": 0.0,
@@ -26,10 +28,17 @@
       "high": 0.627483,
       "median": 0.535813
     },
-    "known_word_rate": {
-      "low": 1.0,
-      "high": 1.0,
-      "median": 1.0
+    "oov_rate": {
+      "low": 0.0,
+      "high": 0.002114,
+      "median": 0.000358,
+      "draws": 400
+    },
+    "oov_plausibility": {
+      "low": -2.751705,
+      "high": -1.85224,
+      "median": -2.194441,
+      "draws": 208
     }
   }
 }

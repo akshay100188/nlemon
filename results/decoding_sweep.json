@@ -1,0 +1,302 @@
+{
+  "checkpoint": "checkpoints/base.pt",
+  "step": 20000,
+  "samples_per_cell": 6,
+  "new_tokens": 160,
+  "pinned": {
+    "temperature": 0.8,
+    "top_k": 40
+  },
+  "pinned_in_band": true,
+  "cells_in_band": 16,
+  "cells_total": 21,
+  "rows": [
+    {
+      "temperature": 0.2,
+      "top_k": 0,
+      "in_band": false,
+      "metrics": {
+        "repeated_4gram_rate": 0.066964,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.1231,
+        "type_token_ratio": 0.434241,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": [
+        "repeated_4gram_rate",
+        "type_token_ratio"
+      ]
+    },
+    {
+      "temperature": 0.2,
+      "top_k": 20,
+      "in_band": false,
+      "metrics": {
+        "repeated_4gram_rate": 0.066964,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.1231,
+        "type_token_ratio": 0.434241,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": [
+        "repeated_4gram_rate",
+        "type_token_ratio"
+      ]
+    },
+    {
+      "temperature": 0.2,
+      "top_k": 40,
+      "in_band": false,
+      "metrics": {
+        "repeated_4gram_rate": 0.066964,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.1231,
+        "type_token_ratio": 0.434241,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": [
+        "repeated_4gram_rate",
+        "type_token_ratio"
+      ]
+    },
+    {
+      "temperature": 0.5,
+      "top_k": 0,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.016425,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 7.64285,
+        "type_token_ratio": 0.523404,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.5,
+      "top_k": 20,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.016425,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 7.64285,
+        "type_token_ratio": 0.523404,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.5,
+      "top_k": 40,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.016425,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 7.64285,
+        "type_token_ratio": 0.523404,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.7,
+      "top_k": 0,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.007971,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 7.9375,
+        "type_token_ratio": 0.502696,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.7,
+      "top_k": 20,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.011153,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 7.9112,
+        "type_token_ratio": 0.501155,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.7,
+      "top_k": 40,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.003906,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 7.7232,
+        "type_token_ratio": 0.502696,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.8,
+      "top_k": 0,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.007938,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.50275,
+        "type_token_ratio": 0.529737,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.8,
+      "top_k": 20,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.004032,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.23215,
+        "type_token_ratio": 0.535208,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.8,
+      "top_k": 40,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.004032,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.8988,
+        "type_token_ratio": 0.535208,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.9,
+      "top_k": 0,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.004425,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 10.1883,
+        "type_token_ratio": 0.543564,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.9,
+      "top_k": 20,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.007722,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.5654,
+        "type_token_ratio": 0.508835,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 0.9,
+      "top_k": 40,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.0,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.42045,
+        "type_token_ratio": 0.549913,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 1.1,
+      "top_k": 0,
+      "in_band": false,
+      "metrics": {
+        "repeated_4gram_rate": 0.0,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 10.0,
+        "type_token_ratio": 0.613492,
+        "known_word_rate": 0.992711
+      },
+      "out_of_band": [
+        "known_word_rate"
+      ]
+    },
+    {
+      "temperature": 1.1,
+      "top_k": 20,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.0,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 8.75595,
+        "type_token_ratio": 0.569955,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 1.1,
+      "top_k": 40,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.003906,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 9.15385,
+        "type_token_ratio": 0.586485,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 1.4,
+      "top_k": 0,
+      "in_band": false,
+      "metrics": {
+        "repeated_4gram_rate": 0.0,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 12.475,
+        "type_token_ratio": 0.805532,
+        "known_word_rate": 0.967305
+      },
+      "out_of_band": [
+        "type_token_ratio",
+        "known_word_rate"
+      ]
+    },
+    {
+      "temperature": 1.4,
+      "top_k": 20,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.0,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 10.1511,
+        "type_token_ratio": 0.56967,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    },
+    {
+      "temperature": 1.4,
+      "top_k": 40,
+      "in_band": true,
+      "metrics": {
+        "repeated_4gram_rate": 0.0,
+        "max_immediate_repeat_run": 1.0,
+        "mean_sentence_words": 11.3095,
+        "type_token_ratio": 0.614602,
+        "known_word_rate": 1.0
+      },
+      "out_of_band": []
+    }
+  ]
+}

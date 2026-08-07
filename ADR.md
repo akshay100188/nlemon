@@ -203,7 +203,7 @@ recorded here rather than chased.
 
 | Codepoint | n | What it actually is | Action |
 |---|---|---|---|
-| `U+00C2` Â | 9 | **Our own bug.** `U+0080`–`U+00BF` encode to UTF-8 as `C2 xx`, so their mojibake is `Â` + the character. The no-break-space and soft-hyphen rules rewrote the *second* half and stranded the first — `he<Â>'d`, `loved.<Â>`, `wasn<Â>'t`. | **Fixed.** A rule for the orphaned prefix now runs last, after the pair rules. Audited: all 9 were strandings, none a real capital A-circumflex. |
+| `U+00C2` Â | 9 | Orphaned mojibake prefix: `Â` followed by **ASCII** — `wasn<Â>'t`, `loved.<Â>`, `he<Â>'d`. `C2` plus an ASCII byte is not a valid mojibake pair, so ftfy cannot interpret it and leaves it. | **Fixed** by a rule for the orphaned prefix. Audited: all 9 were of this kind, none a real capital A-circumflex. |
 | `U+00E2` â | 1 | **A false positive — legitimate French.** `papier-mâché`, correctly spelled. | **Left alone.** Deleting it would corrupt correct text. |
 | `U+00E2` â | 2 | A mojibake'd emoji: `'Iâ¤ï¸ U'` was `'I❤️ U'`. Same failure as the quotes — the third byte died upstream. | **Left alone.** Unrecoverable, and 2 occurrences in 364M words. |
 | `U+20AC` € | 6 | **One non-English document.** A single story (of 2,119,489) starts in English and continues in double-encoded Traditional Chinese. A whole-corpus scan confirms exactly **1 document contains CJK, 46 characters total**. | **Left alone.** Repairing a corpus-wide encoding fault is in scope; hand-fixing one anomalous document is not. |
@@ -667,3 +667,68 @@ sample count. A count you can eyeball against expectation is what turned this on
 This is also the honest spine of the Phase 4 write-up. The interesting story is not "the
 model learned to speak" — small models on TinyStories do that. It is that three separate
 times in one phase, the thing that nearly fooled me was a check reporting success.
+
+**Postscript, from the very next check written.** The `RESIDUE` regression test
+(`tests/test_residue.py`) was built to defend an ordering rule that ADR-009 and a comment in
+`src/data.py` both described: the orphan-prefix rule "must run last, after the pair rules
+strand it". The test asserted that reordering `RESIDUE` should break the fixtures — and the
+assertion **failed**, because reordering broke nothing.
+
+The documented hazard was not real. `ftfy` repairs `Â`+no-break-space and `Â`+soft-hyphen
+before `RESIDUE` runs, so those pairs never reach the rules; the 9 real orphans were `Â`
+followed by *ASCII*, which ftfy cannot touch. 400 permutations give identical output and no
+rule pattern contains another: the set is order-**in**dependent. The test now protects that,
+plus the structural invariant that keeps it true, and both wrong descriptions are corrected.
+
+A documented hazard that does not exist is its own kind of misinformation — it makes the
+next person preserve an ordering for a reason that was never true, and hesitate to touch it.
+Worth noting the mechanism: the test found this only because it was written to *prove its
+own fixtures had teeth* rather than merely to pass. That is now the cheapest available
+defence against this whole family.
+
+---
+
+## ADR-022 — Rare events get pooled and bootstrapped, not medianed
+
+**Context.** ADR-018 recorded `known_word_rate` as a known weakness: its band was
+[1.0000, 1.0000], because over 95% of real validation documents contain no
+out-of-vocabulary words, so the p5 and p95 edges collapsed onto a point. It passed at
+`base.pt`, but a point is not a band. Phase 5 is where it bites — SFT will produce names
+the corpus never used, and the question becomes "invented a plausible name" versus "emitted
+garbage", which vocabulary membership **cannot answer**: both are unknown words.
+
+**Decision.** Replace it with two metrics that measure the right things in the right way.
+
+1. **`oov_rate`, pooled.** Counted over every word in the whole sample set rather than
+   per-document. A rare event needs a big enough denominator to vary at all. Its band is
+   bootstrapped: real documents are drawn in groups the same size as the generated set
+   (16), 400 times, and the band is the spread across groups — the same statistic at the
+   same sample size as the thing being judged.
+2. **`oov_plausibility`.** Mean character-trigram log-probability of the words that *are*
+   out of vocabulary, under a model trained on corpus words. Character shape answers what
+   membership cannot.
+
+**Measured, and it separates cleanly.** Corpus band [-2.7517, -1.8522]:
+
+| | mean score | verdict |
+|---|---|---|
+| invented names (`timmothy`, `hoppity`, `sparklewing`) | -2.229 | in band |
+| rare real English (`kaleidoscope`, `marmalade`) | -2.696 | in band |
+| garbage (`xqzvt`, `bcdfghj`, `tttkkkzz`) | **-4.268** | far outside |
+
+Every garbage string scores below -4.0 and every plausible one above -3.4, against a band
+floor of -2.75. `oov_rate` is now [0.0000, 0.0021] — a real distribution instead of a point.
+
+**Rejected.**
+- *Widen the known-word set to the full corpus* — the obvious fix, and it makes the problem
+  worse: more known words pushes the rate closer to 1.0 and the band tighter onto its point.
+  The degeneracy was never about the word list, it was about medianing a rare event.
+- *Keep the metric and loosen the band by hand* — inventing a threshold to paper over a
+  measurement that carries no information.
+- *Drop the metric* — it is the one Phase 5 most needs.
+
+**Consequence.** The gate reports `oov_plausibility` as "no out-of-vocabulary words to
+score" at `base.pt`, because the pretrained model invents nothing — correctly recorded as
+not-applicable rather than silently passed as 0.0, which would have read as maximally
+implausible. The metric activates precisely when SFT starts inventing, which is when it is
+needed. `known_word_rate` is retired from the banded set.
