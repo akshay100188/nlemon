@@ -109,6 +109,27 @@ sft_gate_temperature: 0.8
 sft_gate_top_k: 40
 sft_gate_new_tokens: 200
 
+# --- PRE-REGISTERED Phase 5 gate thresholds ----------------------------------
+# Agreed and committed BEFORE src/sft.py existed and before any fine-tune ran.
+# Check the git history: this block lands in its own commit, ahead of the one
+# that adds the training code. Phase 4's bar was agreed minutes after the run
+# launched (ADR-017); this is the corrected version of that process.
+#
+# Anchored to the measured base floor on the same 200 held-out prompts, at the
+# same pinned decoding, scored by the same checker:
+#     subject_mention 35.0%  (shuffled control 6.5%, ceiling 100.0%)
+#     length_band     44.5%  (ceiling 92.5%)
+#     is_story        69.0%  (floor only - near-saturated, no headroom)
+#     not_degenerate  74.5%  (floor only)
+# Detection floor at n=200 is ~9.3 points, so both deltas are ~2.7x noise.
+sft_gate_subject_mention_min: 0.60    # base 35.0% -> +25.0 pts, z = 5.2
+sft_gate_length_band_min: 0.70        # base 44.5% -> +25.5 pts, z = 5.1
+sft_gate_is_story_min: 0.69           # base floor: must not regress
+sft_gate_not_degenerate_min: 0.745    # base floor: must not regress
+# If the shuffled control climbs, the model is naming everything rather than the
+# thing it was asked about, and subject_mention stops meaning adherence.
+sft_gate_shuffled_max: 0.10
+
 # --- data -------------------------------------------------------------------
 dataset_name: roneneldan/TinyStories
 dataset_revision: main      # resolved to an exact commit sha in data/manifest.json

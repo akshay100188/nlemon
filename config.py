@@ -114,6 +114,11 @@ STAGE_EXEMPT: dict[str, str] = {
     "sft_gate_temperature": "gate decoding, pinned separately from the global default",
     "sft_gate_top_k": "gate decoding, pinned separately",
     "sft_gate_new_tokens": "gate decoding, pinned separately",
+    "sft_gate_subject_mention_min": "pre-registered gate threshold",
+    "sft_gate_length_band_min": "pre-registered gate threshold",
+    "sft_gate_is_story_min": "pre-registered gate threshold",
+    "sft_gate_not_degenerate_min": "pre-registered gate threshold",
+    "sft_gate_shuffled_max": "pre-registered gate threshold",
 }
 
 
@@ -221,6 +226,12 @@ class Config:
     sft_gate_temperature: float = 0.8
     sft_gate_top_k: int = 40
     sft_gate_new_tokens: int = 200
+    # Pre-registered before src/sft.py existed - see ADR-027 and git history.
+    sft_gate_subject_mention_min: float = 0.60
+    sft_gate_length_band_min: float = 0.70
+    sft_gate_is_story_min: float = 0.69
+    sft_gate_not_degenerate_min: float = 0.745
+    sft_gate_shuffled_max: float = 0.10
 
     # data
     dataset_name: str = "roneneldan/TinyStories"

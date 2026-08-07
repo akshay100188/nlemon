@@ -873,3 +873,47 @@ keeps their own. This splits the floor three ways:
 pre-registered delta is stated against the matched base rate with the chance rate visible
 beside it. The corpus ceiling is measured the same way: 100% matched against 5.5% shuffled,
 confirming subject-mention is not trivially satisfiable.
+
+**Measured verdict on the leak.** `base.pt` scores 35.0% matched against 6.5% shuffled.
+The shuffled rate is essentially the corpus chance rate (5.5%), so the checker is not
+matching everything — it is not broken. The 28.5 points above chance are prompt echo. The
+delta SFT must buy sits on top of that, not on top of zero.
+
+---
+
+## ADR-027 — The Phase 5 gate, pre-registered before the training code existed
+
+**Context.** ADR-017 records the Phase 4 wrinkle honestly: the perplexity bar was agreed
+minutes *after* the run launched. Nothing from the run informed it, but "pre-registered"
+had to be qualified. Phase 5 is the chance to do it properly.
+
+**Decision.** Thresholds agreed and committed **before `src/sft.py` existed and before any
+fine-tune ran**. The git history is the evidence: this config block lands in its own commit,
+ahead of the commit that adds the training code.
+
+| sub-score | base floor | **bar** | delta | z | role |
+|---|---|---|---|---|---|
+| `subject_mention` | 35.0% | **≥ 60%** | +25.0 pts | 5.2 | delta |
+| `length_band` | 44.5% | **≥ 70%** | +25.5 pts | 5.1 | delta |
+| `is_story` | 69.0% | ≥ 69.0% | must not regress | — | floor |
+| `not_degenerate` | 74.5% | ≥ 74.5% | must not regress | — | floor |
+| shuffled control | 6.5% | ≤ 10% | — | — | validity |
+
+The detection floor at n=200 is ~9.3 points, so both deltas are ~2.7x noise: large enough
+to be decisive, small enough that a 14M model could genuinely miss them.
+
+**Why the length bar is set higher than the subject bar.** `base.pt` writes short — 95.6
+words against a 102–200 band and a corpus mean of 157.8 — so much of its 44.5% failure is
+systematic under-length that training on full-length responses should fix almost
+mechanically. The easier metric gets the higher bar; otherwise the gate rewards the fine-tune
+for the thing it was always going to do.
+
+**Rejected.**
+- *One blended adherence threshold* — ADR-024.
+- *Setting the bars after seeing SFT's first result* — the Phase 4 wrinkle, uncorrected.
+- *A bar at the ceiling* — 100% subject-mention is what the corpus scores by construction,
+  not something a 14M model owes.
+
+**Consequence.** The gate can fail, and the shuffled control can invalidate a pass: if
+subject-mention rises while the shuffled rate rises with it, the model has learned to name
+more nouns rather than the right one, and the headline number stops meaning adherence.
