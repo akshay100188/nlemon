@@ -95,14 +95,23 @@ python -m src.verify_docs                    # prose ratios == measured artifact
 python scripts/check_encoding.py --install    # encoding guard as a pre-commit hook
 ```
 
-Two guards exist because two mistakes actually happened, not because they seemed
-prudent. `src/verify_docs.py` checks every "Nx better" in the docs against
+Two guards exist because two mistakes actually happened, not because they seemed prudent.
+
+`src/verify_docs.py` checks every "Nx better" in the docs against
 `results/perplexity_floors.json`, after a stale denominator shipped a wrong ratio
 ([ADR-020](ADR.md#adr-020--the-gate-metric-was-underpowered-and-the-published-ratio-must-be-the-conservative-one)).
-`scripts/check_encoding.py` blocks commits containing mojibake or a BOM, after
-PowerShell's `Get-Content | Set-Content` corrupted this repo's own source twice — in a
-project whose Phase 1 headline is repairing 757,666 mojibake sequences. Markdown is exempt
-from the mojibake check alone, because the ADRs quote the corrupted bytes on purpose.
+
+`scripts/check_encoding.py` blocks commits containing mojibake or a BOM, after PowerShell's
+`Get-Content | Set-Content` corrupted this repo's own source twice — in a project whose
+Phase 1 headline is repairing 757,666 mojibake sequences. It also pins the *documented*
+corruption by exact codepoint: running ftfy over the docs once "repaired" ADR-009's example
+quotes into well-formed UTF-8 that said the wrong thing, and a byte-legality check passes
+that happily. Clean-but-wrong is the corruption that survives a validity test — ADR-009's
+own lesson, one level up.
+
+Both print the size of what they examined, because
+[ADR-021](ADR.md#adr-021--a-green-check-is-a-claim-and-claims-get-checked) is about checks
+that pass while measuring the wrong thing. Three of those turned up in Phase 4 alone.
 
 Every hyperparameter and the global seed live in
 [`configs/nlemon_14m.yaml`](configs/nlemon_14m.yaml). Nothing is hardcoded elsewhere,
@@ -219,18 +228,28 @@ Both are implemented, plus two checks the specified gate would have missed.
 
 327,680,000 tokens (0.70 epochs), 20,000 steps, 120 minutes on the 3050 A.
 
-| | |
+**Two perplexities appear below, and they are not interchangeable.** The **gate metric** is
+5.1981 — `eval_iters: 100`, the procedure pre-registered before the run, and the number that
+decided pass/fail. The **ratios** divide by 5.4636, the model scored on the *same token
+array* as the baselines. If you divide 41.81 by the headline you get 8.04, not 7.65; the
+ratios deliberately use the harsher denominator, which is harsher even than the converged
+random-window estimate of ~5.2680.
+
+| the gate | |
 |---|---|
-| **val perplexity (gate metric)** | **5.1981** (loss 1.6483) |
-| gate threshold | ≤ 8.0, agreed before any result existed |
-| val perplexity on 1,992,060 identical tokens | 5.4636 (loss 1.6981) |
+| **val perplexity, gate metric** | **5.1981** (loss 1.6483), `eval_iters: 100`, pre-registered |
+| threshold | ≤ 8.0, fixed before any full-run result was seen |
+| verdict | PASS — crossed the bar at step 3,000 |
+
+| the baseline comparison — all ÷ 5.4636 | |
+|---|---|
+| val perplexity on the baselines' 1,992,060 tokens | 5.4636 (loss 1.6981) |
 | bigram floor 41.81 | → **7.65x better** |
 | unigram floor 389.91 | → 71.36x better |
 | uniform floor 8,000 | → 1,464.24x better |
 
-**Why there are two perplexities.** The gate metric averages 100 batches of random windows
-(409,600 tokens) — the procedure fixed before the run. The ratios use a stricter
-measurement: the model scored on the **identical token array** as the baselines, so
+The gate metric averages 100 batches of random windows (409,600 tokens). The ratios use a
+stricter measurement: the model scored on the **identical token array** as the baselines, so
 numerator and denominator come from the same data
 ([results/perplexity_floors.md](results/perplexity_floors.md), regenerable with
 `python -m src.baselines --with-model checkpoints/base.pt`).
@@ -244,9 +263,16 @@ seeds, and 5.1981 sat at the optimistic edge; the low-variance estimate over 4.1
 as a requirement in
 [ADR-020](ADR.md#adr-020--the-gate-metric-was-underpowered-and-the-published-ratio-must-be-the-conservative-one).
 
-The threshold itself is not a number I liked the look of. It is 5.2 times the strongest
-trivial predictor, measured on the same held-out shard with the same tokenizer
+**What "pre-registered" does and does not claim here.** The bar was set after the run
+launched, and a 60-step pilot (perplexity 154.6) already existed — so neither "before step
+0" nor "before any result" would be true. The narrower claim is the one that holds: 154.6
+sits between the unigram and bigram floors, cannot distinguish a finish at 4 from one at
+12, and did not inform the number. 8.0 came from the measured floors as a stated multiple
+of bigram, no full-run figure was seen, and the gate stayed live until step 3,000
 ([ADR-017](ADR.md#adr-017--the-perplexity-threshold-is-anchored-to-measured-floors-and-agreed-first)).
+
+The threshold itself is not a number I liked the look of. It is 5.2 times the strongest
+trivial predictor, measured on the same held-out shard with the same tokenizer.
 All four figures above are per-token negative log-likelihood under our own 8,000-token BPE:
 perplexity is not comparable across tokenizers, and a word-level baseline against a
 token-level model would silently change what the ratio means.

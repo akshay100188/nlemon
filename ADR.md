@@ -459,15 +459,26 @@ on the gate metric, **5.4636** on the identical token array the baselines use �
 better than bigram**, 71.36x better than unigram, 1,464.24x better than uniform.
 
 **Exact timing of the agreement, because "pre-registered" is doing real work here.** The
-bar was *not* fixed before step 0, and the record should not imply it was. The order was:
-measure the floors, run a 60-step pilot (validation perplexity 154.6), launch the full run,
-then propose and agree the bar — all inside a few minutes. The run was therefore already
-underway when the threshold was set. What carries the claim is that **no result from the
-full run informed the number**: the only validation figure in hand was 154.6 from the
-pilot, no eval from the real run had been read, and the bar was derived from the measured
-floors rather than from an observed trajectory. The gate did not cross 8.0 until step
-3,000, so it was live for the first 15% of training. The honest phrasing is "fixed before
-any result existed", not "fixed before step 0".
+order was: measure the floors, run a 60-step pilot (validation perplexity 154.6), launch
+the full run, then propose and agree the bar — all inside a few minutes. Two claims that
+would be convenient are both false, and the record should not make either:
+
+- *"The bar was fixed before step 0."* False. The full run was already underway.
+- *"The bar was fixed before any result existed."* Also false, and this one is the subtler
+  trap: the 60-step pilot **was** a result, and it existed first. Anyone reading the logs
+  will find it.
+
+The true claim is narrower and survives that reading. **The only result in hand was a
+60-step pilot at perplexity 154.6, which cannot forecast where a 20,000-step, 0.70-epoch
+run lands** — 154.6 is between the unigram floor (389.91) and the bigram floor (41.81),
+i.e. the model had barely learned token frequencies and had not yet reached the weakest
+context-using baseline. Nothing in it distinguishes a finish at 4 from a finish at 12, and
+8.0 was not derived from it: the bar came from the measured floors, as a stated multiple of
+bigram. No figure from the full run informed it, and the gate did not cross 8.0 until step
+3,000 — live for the first 15% of training.
+
+So the defensible sentence is: *"fixed before any full-run result was seen, from a pilot
+that could not predict the outcome"* — not "before step 0", and not "before any result".
 
 **Rejected.**
 - *Pick a threshold after seeing the result* — the failure this project exists to avoid.
@@ -612,3 +623,47 @@ depended on the choice. Two follow-ups are now on the record:
   metric, not the weights, so it belongs to an eval stage. Left in place for now because
   editing the field list would move `base.pt`'s recorded hash for no real change; the fix
   lands when Phase 7 introduces an `eval` stage.
+
+---
+
+## ADR-021 — A green check is a claim, and claims get checked
+
+**Context.** Building the doc verifier for ADR-020, I made it skip ratio figures inside
+double quotes, so an ADR could cite the number it was correcting without tripping its own
+guard. Quote-pairing across a whole file is unreliable: the pairing drifted, and the
+checker **silently skipped three real claims in ADR-017 while printing "all published
+ratios match"**. I only noticed because the output listed one ADR claim where I knew there
+were four.
+
+That is the third instance of the same failure in a single phase:
+
+| # | The check | What it was actually measuring |
+|---|---|---|
+| ADR-015 | single-batch overfit gate | initialisation luck — the same correct model passed or failed on RNG |
+| ADR-018 | `known_word_rate` coherence band | nothing, at p5 = p95 = 1.0 the "band" is a point |
+| ADR-021 | doc-ratio verifier | the subset of claims its regex happened to reach |
+
+Each one was **green**. None of them was measuring what its name said. A red check gets
+investigated; a green one ends the conversation, which is exactly why a wrong green is more
+dangerous than a wrong red.
+
+**Decision.** Exemptions are removed from the verifier — every `Nx better` in the docs is
+checked, with no escape hatch. Historical or incorrect figures are phrased without that
+pattern ("a ratio of 6.9") so they are visibly not claims. More generally, a check that can
+skip inputs must report what it skipped, and a check whose pass condition cannot fail is not
+a check.
+
+**Rejected.**
+- *Fix the quote-pairing* — a better regex would have made the same class of bug quieter
+  rather than absent. The problem was that skipping was silent, not that the skip rule was
+  imprecise.
+- *Trust the green and move on* — three for three this phase says otherwise.
+
+**Consequence.** Every check added from here states, in its own output, the size of what it
+examined: the encoding guard prints "41 tracked files, 10 golden examples intact", the
+verifier lists each claim it checked by line number, and the coherence gate prints the
+sample count. A count you can eyeball against expectation is what turned this one up.
+
+This is also the honest spine of the Phase 4 write-up. The interesting story is not "the
+model learned to speak" — small models on TinyStories do that. It is that three separate
+times in one phase, the thing that nearly fooled me was a check reporting success.
