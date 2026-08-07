@@ -76,6 +76,39 @@ decode_sweep_top_k: [0, 20, 40]     # 0 = no truncation
 decode_sweep_samples: 6
 decode_sweep_new_tokens: 160
 
+# --- SFT: instruction pairs (Phase 5) ----------------------------------------
+# The held-out split is over SUBJECTS, not phrasings (ADR-023): all templates
+# appear in both sets, so the eval asks whether the model follows an instruction
+# about a thing it was never instructed about.
+sft_subject_scan_docs: 200000   # docs scanned to mine the subject pool
+sft_pair_scan_docs: 400000      # docs scanned when building pairs
+sft_subject_pool: 400           # top-N determiner-followed words considered
+sft_min_subject_count: 200      # a candidate subject must be this common
+# ...and must be the HEAD of its noun phrase, not a modifier. The determiner
+# test alone promotes adjectives ("a brave bird" makes 'brave' look like a
+# subject), and "Write a story about a brave." is not an instruction.
+sft_min_head_ratio: 0.5
+sft_heldout_subject_frac: 0.2
+sft_max_pairs: 40000
+sft_eval_prompts: 200
+sft_min_response_words: 60      # keep pairs whose response is a real story
+sft_max_response_words: 220
+
+# Feature-checker floors (ADR-005). is_story and not_degenerate are FLOORS, not
+# part of the adherence delta: base emits stories unconditionally, so is_story is
+# near-saturated before SFT touches anything and has no headroom to show learning.
+checker_min_sentences: 3
+checker_min_story_words: 40
+checker_max_repeat_rate: 0.0333   # the Phase 4 corpus p95 for repeated 4-grams
+checker_max_repeat_run: 2         # the Phase 4 corpus p95
+
+# Decoding for the SFT gate. Read from here, not from a shared default, so a
+# later phase changing the global decode default cannot silently re-run this
+# gate at settings it was never pre-registered against.
+sft_gate_temperature: 0.8
+sft_gate_top_k: 40
+sft_gate_new_tokens: 200
+
 # --- data -------------------------------------------------------------------
 dataset_name: roneneldan/TinyStories
 dataset_revision: main      # resolved to an exact commit sha in data/manifest.json

@@ -95,6 +95,25 @@ STAGE_EXEMPT: dict[str, str] = {
     "decode_sweep_top_k": "evidence sweep",
     "decode_sweep_samples": "evidence sweep",
     "decode_sweep_new_tokens": "evidence sweep",
+    # SFT dataset construction. These belong to a "sft" stage hash, added when
+    # sft.py lands; until a checkpoint records one, they change no artifact.
+    "sft_subject_scan_docs": "sft dataset construction (stage added with sft.py)",
+    "sft_pair_scan_docs": "sft dataset construction",
+    "sft_subject_pool": "sft dataset construction",
+    "sft_min_subject_count": "sft dataset construction",
+    "sft_min_head_ratio": "sft dataset construction",
+    "sft_heldout_subject_frac": "sft dataset construction",
+    "sft_max_pairs": "sft dataset construction",
+    "sft_eval_prompts": "sft evaluation set size",
+    "sft_min_response_words": "sft dataset construction",
+    "sft_max_response_words": "sft dataset construction",
+    "checker_min_sentences": "gate threshold",
+    "checker_min_story_words": "gate threshold",
+    "checker_max_repeat_rate": "gate threshold",
+    "checker_max_repeat_run": "gate threshold",
+    "sft_gate_temperature": "gate decoding, pinned separately from the global default",
+    "sft_gate_top_k": "gate decoding, pinned separately",
+    "sft_gate_new_tokens": "gate decoding, pinned separately",
 }
 
 
@@ -181,6 +200,27 @@ class Config:
     decode_sweep_top_k: tuple[int, ...] = (0, 20, 40)
     decode_sweep_samples: int = 6
     decode_sweep_new_tokens: int = 160
+
+    # SFT instruction pairs (Phase 5)
+    sft_subject_scan_docs: int = 200_000
+    sft_pair_scan_docs: int = 400_000
+    sft_subject_pool: int = 400
+    sft_min_subject_count: int = 200
+    sft_min_head_ratio: float = 0.5
+    sft_heldout_subject_frac: float = 0.2
+    sft_max_pairs: int = 40_000
+    sft_eval_prompts: int = 200
+    sft_min_response_words: int = 60
+    sft_max_response_words: int = 220
+    checker_min_sentences: int = 3
+    checker_min_story_words: int = 40
+    checker_max_repeat_rate: float = 0.0333
+    checker_max_repeat_run: int = 2
+    # Pinned in the gate's own config, deliberately not aliased to the global
+    # decode defaults - see ADR-025.
+    sft_gate_temperature: float = 0.8
+    sft_gate_top_k: int = 40
+    sft_gate_new_tokens: int = 200
 
     # data
     dataset_name: str = "roneneldan/TinyStories"

@@ -732,3 +732,144 @@ score" at `base.pt`, because the pretrained model invents nothing — correctly 
 not-applicable rather than silently passed as 0.0, which would have read as maximally
 implausible. The metric activates precisely when SFT starts inventing, which is when it is
 needed. `known_word_rate` is retired from the banded set.
+
+**Untested where it matters.** Both bands were built from validation *fixtures*, and
+`oov_plausibility` has never yet fired on live model output — `base.pt` produces no
+out-of-vocabulary words at all. The first SFT gallery is the first time this band meets the
+condition it was designed for, and instruction-following is exactly what might push the
+model off the TinyStories distribution. That cell gets read first, not last.
+
+---
+
+## ADR-023 — Hold out subjects, not phrasings
+
+**Context.** Phase 5's gate measures instruction-adherence on "held-out prompts". There are
+two ways to hold out, and they answer different questions.
+
+**Decision.** The held-out split is over **subjects**. All four prompt templates appear in
+both the training pairs and the evaluation set, so phrasing is held constant; the 80
+evaluation subjects are disjoint from the 320 training subjects.
+
+**Rejected.** *Holding out phrasings* — training on "Write a story about X" and evaluating
+on "Can you write a story about X?" measures generalisation across four sentence forms. It
+is a real question and an easier one, and it does not survive being asked "did it just
+memorise your templates?" Holding out the subject asks whether the model follows an
+instruction about a thing it was never instructed about.
+
+**Consequence.** The gate must name which question it answers, and it does: adherence on
+subjects the fine-tune never saw. Two construction details make that claim honest:
+
+- **Subjects are mined from the corpus, not hand-listed** — words following a determiner,
+  above a frequency floor. A hand-written list would encode my guesses about what
+  TinyStories is about.
+- **The split is rank-stratified, not random.** Drawing 20% at random would have made the
+  held-out pool systematically rarer than the training pool, so the evaluation would be
+  harder for a reason unrelated to instruction-following. Measured after stratifying:
+  median corpus frequency 1,959 (train) versus 1,988 (held-out).
+
+A **headedness filter** was needed and is worth recording. The determiner test alone
+promotes adjectives: "a brave bird" makes `brave` look like a subject, and "Write a story
+about a brave." is not an instruction. A candidate must be the *head* of its phrase — 
+followed by punctuation or a word that cannot be a noun — at least 50% of the time. That
+dropped 153 modifier-like words (`special`, `best`, `loud`, `great`, `beautiful`, `red`).
+The filter is corpus-derived rather than a hand-written adjective list I would have to keep
+complete.
+
+---
+
+## ADR-024 — Report the sub-scores separately; never blend an adherence scalar
+
+**Context.** "Instruction adherence" is the Phase 5 headline, and the obvious presentation
+is one number.
+
+**Decision.** Four sub-scores, reported separately, split into two groups that are **not**
+combined:
+
+| sub-score | role | why |
+|---|---|---|
+| `subject_mention` | **delta** | carries the instruction-following claim |
+| `length_band` | **delta** | did it produce a story-shaped response |
+| `is_story` | floor | near-saturated before SFT; almost no headroom |
+| `not_degenerate` | floor | a fine-tune that degenerates must fail |
+
+**Why `is_story` is deliberately excluded from the delta.** `base.pt` emits stories
+unconditionally — that is what pretraining on TinyStories produces. So this sub-score is
+close to saturated before SFT touches anything, and a green reading is not evidence the
+fine-tune worked. It is `known_word_rate`'s degenerate band wearing a different hat
+(ADR-022), caught this time *before* it was published as signal rather than after. It earns
+its place as a floor: a fine-tune that stops producing stories must fail.
+
+**Rejected.** *A single blended adherence number* — subject-mention and length-band move for
+different reasons, and averaging them hides which one SFT actually bought. A model that
+learned to name the subject but produce stubs would look identical to one that learned
+length but ignored the instruction.
+
+**Consequence.** The gate pre-registers a threshold per delta sub-score, not one on a
+composite. Two numbers are harder to headline and impossible to game by improving the easy
+one.
+
+---
+
+## ADR-025 — The gate pins its own decoding, separately from the global default
+
+**Context.** Phases 5 and 6 compare checkpoints. A comparison is about the checkpoints only
+if everything else is held still, and decoding is the easiest thing to vary by accident:
+`results/decoding_sweep.md` shows the same model landing in or out of the corpus bands
+depending on temperature alone. Comparing `sft.pt` to `base.pt` at different settings would
+measure the decoder.
+
+**Decision.** Two separate guards, because there are two separate failures.
+
+1. *Between stages*: both checkpoints are scored in the same run at the same settings.
+2. *Across time*: the gate reads `sft_gate_temperature` / `sft_gate_top_k` /
+   `sft_gate_new_tokens` — **its own** config keys, not the shared `coherence_*` decode
+   defaults — and records the values used in its result file. If Phase 6 changes the global
+   decode default, a re-run of the SFT gate still recomputes at the pair it was
+   pre-registered against.
+
+**Rejected.** *Aliasing the gate to the global decode default* — the tidier option, and it
+silently couples a pre-registered measurement to a value a later phase has every reason to
+change. The duplication is the point: two keys that happen to hold the same number today
+but are allowed to diverge, one of which is frozen by pre-registration.
+
+**Consequence.** `sft_gate_*` duplicates `coherence_*` at 0.8 / 40 today. Anyone changing
+one must decide about the other, which is the intended friction.
+
+---
+
+## ADR-026 — Separate chance, echo, and instruction-following in the base floor
+
+**Context.** The Phase 4 threshold was anchored to bigram: an **adversarial** floor, an
+alternative model computed independently of the thing under test. Phase 5's anchor is
+`base.pt`'s own adherence — a **self-baseline**, one fine-tune step from the model being
+judged. Still the right anchor, because the real question is "did SFT buy adherence over
+base prompted identically". But it does not come with bigram's independence, so the floor
+needs decomposing before a delta on top of it means anything.
+
+The specific hazard: the prompt contains the subject word. A model that merely continues its
+context will repeat it. That is ordinary conditioning, not instruction-following, and a raw
+subject-mention rate cannot tell the two apart.
+
+**Decision.** Report a **shuffled-subject control** alongside every subject-mention rate:
+each response re-scored against a different response's subject, via a derangement so nobody
+keeps their own. This splits the floor three ways:
+
+- **chance** — the shuffled rate. How often a story mentions some unrelated common noun
+  anyway. Measured on real corpus responses: **5.5%**.
+- **echo** — matched minus shuffled, for a model that was never instructed.
+- **instruction** — what SFT must buy on top of both.
+
+**Rejected.**
+- *Reading the raw base rate as the floor* — it blends chance and echo, so a delta over it
+  understates or overstates depending on which dominates, with no way to tell which.
+- *Treating any high base subject-mention as a checker leak* — the sharper reading. A true
+  leak is the checker finding the subject in text the model was handed; that is already
+  prevented by scoring the continuation only, with the prompt stripped. Prompt echo is a
+  real property of language models, not a defect, and the shuffled control is what
+  distinguishes them. High matched *and* high shuffled would be the checker matching
+  everything; high matched with low shuffled is echo plus whatever else is there.
+
+**Consequence.** The floor is reported as three numbers rather than one, and the
+pre-registered delta is stated against the matched base rate with the chance rate visible
+beside it. The corpus ceiling is measured the same way: 100% matched against 5.5% shuffled,
+confirming subject-mention is not trivially satisfiable.
