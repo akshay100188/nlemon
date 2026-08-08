@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "context_len": 256,
+  "pair_index": 0,
+  "prompt": "Write a short story about a needle.",
+  "prompt_tokens": 11,
+  "response_tokens": 161,
+  "supervised_positions": 161,
+  "ignored_prompt_positions": 10,
+  "ignored_padding_positions": 85,
+  "cross_entropy_live_terms": 161,
+  "checks": [
+    "prompt-target positions are all IGNORE",
+    "response-target positions are all supervised",
+    "response targets equal response_ids exactly (alignment)",
+    "padding positions are all IGNORE",
+    "supervised count equals response token count",
+    "cross_entropy live-term count equals response token count",
+    "loss is finite"
+  ]
+}

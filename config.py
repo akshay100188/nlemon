@@ -59,6 +59,24 @@ STAGE_FIELDS: dict[str, tuple[str, ...]] = {
         # hash for no real change; it migrates to an eval stage in Phase 7.
         "eval_iters",
     ),
+    # Everything that changes the weights in sft.pt. Includes the whole "train"
+    # set, because sft.pt is a continuation of base.pt and a different base is a
+    # different fine-tune - plus the fields that decide which pairs exist and how
+    # they are packed. sft_max_response_words and context_len jointly decide what
+    # the budget filter censors (ADR-028), so both belong here.
+    "sft": (
+        "seed", "strict_determinism",
+        "vocab_size", "d_model", "n_layers", "n_heads", "context_len",
+        "dropout", "mlp_ratio", "bias",
+        "micro_batch", "grad_accum_steps", "lr", "max_steps", "warmup_steps",
+        "weight_decay", "beta1", "beta2", "grad_clip", "min_lr_ratio",
+        "sft_subject_scan_docs", "sft_pair_scan_docs", "sft_subject_pool",
+        "sft_min_subject_count", "sft_min_head_ratio",
+        "sft_heldout_subject_frac", "sft_max_pairs",
+        "sft_min_response_words", "sft_max_response_words",
+        "sft_lr", "sft_epochs", "sft_micro_batch", "sft_grad_accum_steps",
+        "sft_warmup_steps", "sft_min_lr_ratio", "sft_val_frac",
+    ),
 }
 
 # Fields deliberately outside every stage hash, with the reason.
@@ -95,18 +113,10 @@ STAGE_EXEMPT: dict[str, str] = {
     "decode_sweep_top_k": "evidence sweep",
     "decode_sweep_samples": "evidence sweep",
     "decode_sweep_new_tokens": "evidence sweep",
-    # SFT dataset construction. These belong to a "sft" stage hash, added when
-    # sft.py lands; until a checkpoint records one, they change no artifact.
-    "sft_subject_scan_docs": "sft dataset construction (stage added with sft.py)",
-    "sft_pair_scan_docs": "sft dataset construction",
-    "sft_subject_pool": "sft dataset construction",
-    "sft_min_subject_count": "sft dataset construction",
-    "sft_min_head_ratio": "sft dataset construction",
-    "sft_heldout_subject_frac": "sft dataset construction",
-    "sft_max_pairs": "sft dataset construction",
-    "sft_eval_prompts": "sft evaluation set size",
-    "sft_min_response_words": "sft dataset construction",
-    "sft_max_response_words": "sft dataset construction",
+    # The SFT dataset-construction fields moved INTO the "sft" stage hash when
+    # sft.py landed; only the ones that touch no weight stay exempt.
+    "sft_eval_prompts": "gate evaluation set size; no weight depends on it",
+    "sft_eval_interval": "bookkeeping: how often SFT validation runs",
     "checker_min_sentences": "gate threshold",
     "checker_min_story_words": "gate threshold",
     "checker_max_repeat_rate": "gate threshold",
@@ -219,6 +229,16 @@ class Config:
     sft_eval_prompts: int = 200
     sft_min_response_words: int = 60
     sft_max_response_words: int = 220
+    # SFT training. lr is 6x below pretrain: the base already speaks, and the job
+    # is to bend its behaviour without overwriting what it knows.
+    sft_lr: float = 5.0e-5
+    sft_epochs: int = 3
+    sft_micro_batch: int = 16
+    sft_grad_accum_steps: int = 4
+    sft_warmup_steps: int = 100
+    sft_min_lr_ratio: float = 0.1
+    sft_val_frac: float = 0.02
+    sft_eval_interval: int = 100
     checker_min_sentences: int = 3
     checker_min_story_words: int = 40
     checker_max_repeat_rate: float = 0.0333
@@ -235,9 +255,9 @@ class Config:
     sft_gate_subject_mention_delta: float = 0.250
     sft_gate_length_band_delta: float = 0.255
     sft_gate_subject_mention_min: float = 0.60
-    sft_gate_length_band_min: float = 0.70
-    sft_gate_is_story_min: float = 0.69
-    sft_gate_not_degenerate_min: float = 0.745
+    sft_gate_length_band_min: float = 0.69
+    sft_gate_is_story_min: float = 0.77
+    sft_gate_not_degenerate_min: float = 0.735
     sft_gate_shuffled_max: float = 0.10
 
     # data

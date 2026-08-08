@@ -505,7 +505,32 @@ def cmd_mask(cfg: Config) -> None:
     print(f"  cross_entropy: {nonzero} live terms == {rlen} response tokens  OK")
     print(f"  random-logit loss {mean:.4f} ~ ln(vocab) "
           f"{float(np.log(cfg.vocab_size)):.4f}  OK")
+
+    # The receipt. `src.sft.train` refuses to start without it, so the assertion
+    # cannot be skipped by anyone in a hurry - including me.
+    write_json(REPO_ROOT / cfg.results_dir / "sft_mask_assertion.json", {
+        "passed": True,
+        "context_len": cfg.context_len,
+        "pair_index": 0,
+        "prompt": pair["prompt"],
+        "prompt_tokens": plen,
+        "response_tokens": rlen,
+        "supervised_positions": sup,
+        "ignored_prompt_positions": plen - 1,
+        "ignored_padding_positions": int(cfg.context_len - seq_positions),
+        "cross_entropy_live_terms": nonzero,
+        "checks": [
+            "prompt-target positions are all IGNORE",
+            "response-target positions are all supervised",
+            "response targets equal response_ids exactly (alignment)",
+            "padding positions are all IGNORE",
+            "supervised count equals response token count",
+            "cross_entropy live-term count equals response token count",
+            "loss is finite",
+        ],
+    })
     print("\nmask assertion PASSED on the tensor the optimizer sees.")
+    print(f"wrote {REPO_ROOT / cfg.results_dir / 'sft_mask_assertion.json'}")
 
 
 def main() -> None:

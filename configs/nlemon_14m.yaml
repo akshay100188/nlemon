@@ -93,6 +93,27 @@ sft_max_pairs: 40000
 sft_eval_prompts: 200
 sft_min_response_words: 60      # keep pairs whose response is a real story
 sft_max_response_words: 220
+# Note: 220 words does not fit in a 256-token window. Pairs that overflow are
+# dropped rather than truncated (truncating teaches mid-sentence stops, the exact
+# pathology SFT removes), and `python -m src.sft_data census` reports what that
+# censors - 5.5% of pairs, all above ~160 words. ADR-028.
+
+# --- SFT training ------------------------------------------------------------
+# lr is 6x below pretrain's 3e-4. The base model already speaks English; the job
+# is to bend its behaviour without overwriting what it knows. Too high an lr here
+# buys adherence by burning fluency, which is what the is_story and
+# not_degenerate floors exist to catch.
+sft_lr: 5.0e-5
+sft_epochs: 3
+sft_micro_batch: 16            # same VRAM fit as pretrain
+sft_grad_accum_steps: 4        # effective batch 64 sequences
+sft_warmup_steps: 100
+sft_min_lr_ratio: 0.1
+# A validation slice of the TRAIN-subject pairs, for the loss curve and
+# checkpoint selection. Deliberately not the 200 held-out-subject gate prompts:
+# selecting a checkpoint on the gate set would make the gate a training signal.
+sft_val_frac: 0.02
+sft_eval_interval: 100
 
 # Feature-checker floors (ADR-005). is_story and not_degenerate are FLOORS, not
 # part of the adherence delta: base emits stories unconditionally, so is_story is
@@ -138,18 +159,31 @@ sft_gate_length_band_delta: 0.255
 
 # Absolute bars = base + delta. Anchored to the measured base floor on the same
 # 200 held-out prompts, at the same pinned decoding, scored by the same checker.
-#     subject_mention 35.0%  (shuffled control 6.5%, ceiling 100.0%)
-#     length_band     44.5%  (ceiling 92.5%)
-#     is_story        69.0%  (floor only - near-saturated, no headroom)
-#     not_degenerate  74.5%  (floor only)
-# ^ measured at sft_gate_new_tokens = 200. That cap was wrong (ADR-028), so these
-# four numbers are re-measured at 245 and the bars re-anchored in the next commit.
-# The floors move WITH the re-measured base: keeping is_story at 0.69 while
-# raising the cap would be the one change that genuinely made the gate easier.
-sft_gate_subject_mention_min: 0.60    # base 35.0% -> +25.0 pts, z = 5.2
-sft_gate_length_band_min: 0.70        # base 44.5% -> +25.5 pts, z = 5.1
-sft_gate_is_story_min: 0.69           # base floor: must not regress
-sft_gate_not_degenerate_min: 0.745    # base floor: must not regress
+# Re-measured at the corrected cap of 245 (ADR-028); the cap-200 numbers are kept
+# in results/sft_scores_base_cap200.json so the change is auditable.
+#
+#                    cap 200   cap 245
+#   subject_mention    35.0%     35.0%   (shuffled 7.0%, ceiling 100.0%)
+#   length_band        44.5%     43.5%   (ceiling 92.5%)
+#   is_story           69.0%     77.0%   (floor; +8.0 was pure truncation)
+#   not_degenerate     74.5%     73.5%   (floor)
+#   mean words         95.59    100.86
+#
+# The floors move WITH the re-measured base. Keeping is_story at 0.69 while
+# raising the cap would have been the one change that genuinely loosened the gate;
+# re-anchoring it to 0.77 makes that half 8 points HARDER. Net across the four
+# bars: +6.0 points tighter than the cap-200 registration.
+sft_gate_subject_mention_min: 0.60    # base 35.0% + 25.0 delta
+sft_gate_length_band_min: 0.69        # base 43.5% + 25.5 delta
+# The floors are set at base exactly, which is the literal reading of "must not
+# regress". Recorded flaw: a paired comparison at n=200 has a one-sided 95%
+# detection floor of ~6.9 points on is_story and ~7.3 on not_degenerate, so a
+# behaviourally neutral fine-tune lands below a floor set at base about half the
+# time. That is the same coin-flip shape the 300-step overfit gate was rejected
+# for. Left at the strict value deliberately: loosening a floor is a decision to
+# be made explicitly and in advance, not one to be inferred by me.
+sft_gate_is_story_min: 0.77           # base floor: must not regress
+sft_gate_not_degenerate_min: 0.735    # base floor: must not regress
 # If the shuffled control climbs, the model is naming everything rather than the
 # thing it was asked about, and subject_mention stops meaning adherence.
 sft_gate_shuffled_max: 0.10

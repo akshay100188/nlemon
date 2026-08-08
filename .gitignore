@@ -2,6 +2,10 @@
 data/*.txt
 data/*.bin
 data/*.json
+# Packed SFT tensors: 74 MB, and fully determined by sft_train.json + the
+# tokenizer + context_len, so `python -m src.sft_data build` regenerates them
+# byte-for-byte. The counts that matter are in results/sft_budget_census.json.
+data/*.npy
 !data/.gitkeep
 
 # ...but these three are small and are the audit trail, so they ship:
