@@ -159,56 +159,61 @@ sft_gate_top_k: 40
 #       model for succeeding. See results/sft_budget_census.md.
 sft_gate_new_tokens: 245
 
-# --- PRE-REGISTERED Phase 5 gate thresholds ----------------------------------
-# Agreed and committed BEFORE src/sft.py existed and before any fine-tune ran.
-# Check the git history: this block lands in its own commit, ahead of the one
-# that adds the training code. Phase 4's bar was agreed minutes after the run
-# launched (ADR-017); this is the corrected version of that process.
+# --- PRE-REGISTERED Phase 5 gate thresholds, ATTEMPT #2 -----------------------
+# Attempt #1 REDed and that result STANDS (ADR-032). This is a second attempt
+# beside it, not a replacement. Registered in its own commit, ahead of the
+# attempt #2 fine-tune, same shape as 3d8ba40 was for attempt #1.
 #
-# THE PRE-REGISTERED QUANTITY IS THE DELTA, not the absolute bar. The bar is
-# base + delta, computed mechanically, so re-measuring the floor with a corrected
-# instrument cannot loosen the commitment (ADR-028). Detection floor at n=200 is
-# ~9.3 points, so both deltas are ~2.7x noise.
-sft_gate_subject_mention_delta: 0.250
-sft_gate_length_band_delta: 0.255
+# Base floor re-measured from scratch on the re-derived pool, at unchanged
+# decoding. +25.0 was NOT carried over: the aboutness filter raised base's
+# subject_mention from 35.0% to 47.8%, and base+25 off a higher floor is a
+# different and harder claim than the one that was agreed.
+#
+#                   attempt1   attempt2   ceiling   n_eff   floor
+#   subject_mention    35.0%      47.8%    100.0%     250    8.8pt
+#   length_band        43.5%      37.8%     87.5%     285    8.0pt
+#   is_story           77.0%      76.0%     99.7%     271    6.0pt
+#   not_degenerate     73.5%      70.8%     96.5%     281    6.3pt
+#   shuffled            7.0%       0.6%      3.2%
+#
+# n_eff, not n. 312 prompts cluster into 78 subjects and outcomes correlate
+# inside a subject, so the eval is worth fewer observations than prompts
+# (ADR-033). Attempt #1 priced its bar as if 200 prompts were 200 observations;
+# the measured ICC of 0.33 made them worth ~106, turning a bar described as 2.7x
+# noise into one that was 1.9x. Balanced sampling cut ICC to 0.083 here.
+#
+# Both deltas are stated as MULTIPLES OF THE MEASURED DETECTION FLOOR, the same
+# way val_ppl_threshold was stated as a multiple of the bigram floor:
+sft_gate_subject_mention_delta: 0.175   # 2.0x the 8.8pt floor; closes 33% of headroom
+sft_gate_length_band_delta: 0.300       # 3.8x the 8.0pt floor; closes 60% of headroom
+#
+# Attempt #1's sft closed 23% of its subject_mention headroom on data where 47.8%
+# of pairs taught the subject at one mention or fewer. 33% asks for more than
+# that, so a pass is evidence the aboutness fix bought something - while staying
+# under the naive "twice the closure" projection of 46%, so it is not a bar the
+# data forbids.
+sft_gate_subject_mention_min: 0.653   # base 47.8% + 17.5
+sft_gate_length_band_min: 0.678       # base 37.8% + 30.0
 
-# Absolute bars = base + delta. Anchored to the measured base floor on the same
-# 200 held-out prompts, at the same pinned decoding, scored by the same checker.
-# Re-measured at the corrected cap of 245 (ADR-028); the cap-200 numbers are kept
-# in results/sft_scores_base_cap200.json so the change is auditable.
-#
-#                    cap 200   cap 245
-#   subject_mention    35.0%     35.0%   (shuffled 7.0%, ceiling 100.0%)
-#   length_band        44.5%     43.5%   (ceiling 92.5%)
-#   is_story           69.0%     77.0%   (floor; +8.0 was pure truncation)
-#   not_degenerate     74.5%     73.5%   (floor)
-#   mean words         95.59    100.86
-#
-# The floors move WITH the re-measured base. Keeping is_story at 0.69 while
-# raising the cap would have been the one change that genuinely loosened the gate;
-# re-anchoring it to 0.77 makes that half 8 points HARDER. Net across the four
-# bars: +6.0 points tighter than the cap-200 registration.
-sft_gate_subject_mention_min: 0.60    # base 35.0% + 25.0 delta
-sft_gate_length_band_min: 0.69        # base 43.5% + 25.5 delta
-# The floors are base MINUS the detection floor, so a breach means a regression
-# the data can actually distinguish from noise. A floor set at base exactly reads
-# stricter but is a coin flip: a paired comparison at n=200 cannot resolve
-# anything smaller than ~7 points, so a behaviourally neutral fine-tune would
-# breach about half the time. That is the same defect the 300-step overfit gate
-# was rejected for (overfit_steps, above). Agreed before sft.pt was scored.
-#
-#   floor = base - z * sqrt(2 * p * (1 - p) / n),  z = 1.645 (one-sided 95%)
-#   is_story        0.770 - 0.069 = 0.701
-#   not_degenerate  0.735 - 0.073 = 0.662
-#
-# The gate recomputes both from base's recorded scores and asserts they match
-# these frozen numbers, so the bar cannot drift from the rule that set it.
+# Floors: base minus the one-sided detection floor at n_eff (ADR-029).
 sft_gate_floor_z: 1.645
-sft_gate_is_story_min: 0.701          # base 77.0% - 6.9 pts
-sft_gate_not_degenerate_min: 0.662    # base 73.5% - 7.3 pts
-# If the shuffled control climbs, the model is naming everything rather than the
-# thing it was asked about, and subject_mention stops meaning adherence.
-sft_gate_shuffled_max: 0.10
+sft_gate_is_story_min: 0.699          # base 76.0% - 6.0pt
+sft_gate_not_degenerate_min: 0.645    # base 70.8% - 6.3pt
+
+# THREE-WAY VERDICT, registered before the run.
+#   GREEN  sft >= bar
+#   AMBER  bar - 1.96*SE <= sft < bar   - missed, but by less than this eval can
+#          resolve. NOT a pass, and per ADR-032 not grounds for a third attempt.
+#   RED    sft < bar - 1.96*SE          - missed by more than the noise floor.
+# Attempt #1 had no amber, which is why its 10-point shortfall had to be argued
+# about after the fact instead of being classified by a rule agreed beforehand.
+sft_gate_amber_z: 1.96
+
+# Chance is far lower on the cleaned pool - shuffled fell from 7.0% to 0.6%, and
+# real corpus responses mention an unrelated pool subject only 3.2% of the time.
+# 10% was loose against a 7% chance rate; against 0.6% it would be meaningless.
+# Set at ~2x the corpus chance rate: above that the model is spraying nouns.
+sft_gate_shuffled_max: 0.06
 
 # --- data -------------------------------------------------------------------
 dataset_name: roneneldan/TinyStories

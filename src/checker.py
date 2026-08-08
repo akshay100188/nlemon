@@ -358,7 +358,7 @@ def cmd_oov(cfg: Config) -> None:
     print(f"wrote {REPO_ROOT / cfg.results_dir / 'sft_oov.json'}")
 
 
-def _se_diff(p: float, n: int) -> float:
+def _se_diff(p: float, n: float) -> float:
     """SE of a paired difference, at the unpaired upper bound.
 
     The true SE depends on the discordant-pair count and is smaller, so using the
@@ -367,7 +367,46 @@ def _se_diff(p: float, n: int) -> float:
     safe way to round.
     """
     import math
-    return math.sqrt(2 * p * (1 - p) / max(n, 1))
+    return math.sqrt(2 * p * (1 - p) / max(n, 1.0))
+
+
+def effective_n(rows: list[dict], metric: str) -> dict:
+    """How many independent observations the eval is really worth (ADR-033).
+
+    Prompts cluster into subjects, and outcomes correlate inside a subject: a
+    model that can talk about `bunny` gets all four bunny prompts right. When
+    that happens, `n` prompts are worth fewer than `n` observations and every
+    threshold derived from a plain binomial is too tight.
+
+    Attempt #1 priced its bar as if 200 prompts were 200 observations. The
+    measured ICC was 0.33, so they were worth about 106, and the detection floor
+    it published (9.3 points) was really 12.9. That is not a rounding error - it
+    turned a bar described as 2.7x noise into one that was 1.9x.
+
+    ICC comes from a one-way random-effects ANOVA over subjects; the design
+    effect is `1 + (m_bar - 1) * ICC`. Recomputed here from the per-prompt rows
+    every time the gate runs, so it tracks whatever eval set is actually in use.
+    """
+    from collections import defaultdict
+
+    groups: dict[str, list[float]] = defaultdict(list)
+    for r in rows:
+        groups[r["subject"]].append(1.0 if r[metric] else 0.0)
+    k = len(groups)
+    n = sum(len(v) for v in groups.values())
+    if k < 2 or n <= k:
+        return {"k": k, "n": n, "icc": 0.0, "deff": 1.0, "n_eff": float(n)}
+    grand = sum(sum(v) for v in groups.values()) / n
+    ssb = sum(len(v) * (sum(v) / len(v) - grand) ** 2 for v in groups.values())
+    ssw = sum(sum((x - sum(v) / len(v)) ** 2 for x in v) for v in groups.values())
+    msb, msw = ssb / (k - 1), ssw / (n - k)
+    sizes = [len(v) for v in groups.values()]
+    m0 = (n - sum(s * s for s in sizes) / n) / (k - 1)
+    den = msb + (m0 - 1) * msw
+    icc = max(0.0, min(1.0, (msb - msw) / den)) if den > 0 else 0.0
+    deff = 1 + (n / k - 1) * icc
+    return {"k": k, "n": n, "icc": round(icc, 4), "deff": round(deff, 4),
+            "n_eff": round(n / deff, 1)}
 
 
 def derive_bars(cfg: Config, base: dict) -> dict:
@@ -383,7 +422,6 @@ def derive_bars(cfg: Config, base: dict) -> dict:
     gate that reads a threshold off a summary can be handed a wrong summary; a
     gate that recomputes it and cross-checks cannot.
     """
-    n = base["scores"]["n"]
     deltas = {"subject_mention": cfg.sft_gate_subject_mention_delta,
               "length_band": cfg.sft_gate_length_band_delta}
     frozen = {"subject_mention": cfg.sft_gate_subject_mention_min,
@@ -394,15 +432,23 @@ def derive_bars(cfg: Config, base: dict) -> dict:
     bars, drift = {}, []
     for s in ALL_SCORES:
         p = base["scores"][s]
+        # Effective n, not nominal: prompts cluster by subject (ADR-033).
+        eff = effective_n(base["per_prompt"], s)
+        se = _se_diff(p, eff["n_eff"])
         if s in DELTA_SCORES:
             bar, rule = p + deltas[s], f"base {p:.1%} + delta {deltas[s]:.1%}"
         else:
-            allow = cfg.sft_gate_floor_z * _se_diff(p, n)
+            allow = cfg.sft_gate_floor_z * se
             bar = p - allow
             rule = (f"base {p:.1%} - {cfg.sft_gate_floor_z} x SE "
-                    f"{_se_diff(p, n):.3%} = -{allow:.1%}")
+                    f"{se:.3%} = -{allow:.1%}")
+        # The amber floor: a shortfall smaller than the eval can resolve is not
+        # a clean failure, and calling it one would report noise as a verdict.
+        detect = cfg.sft_gate_amber_z * se
         bars[s] = {"bar": round(bar, 6), "frozen": frozen[s], "base": p,
-                   "rule": rule}
+                   "rule": rule, "se": round(se, 6),
+                   "detection_floor": round(detect, 6),
+                   "amber_floor": round(bar - detect, 6), **eff}
         if abs(bar - frozen[s]) > 0.001:
             drift.append(f"{s}: rule gives {bar:.4f}, config says {frozen[s]:.4f}")
     if drift:
@@ -436,18 +482,30 @@ def cmd_gate(cfg: Config) -> None:
           f"band {base['length_band'][0]}-{base['length_band'][1]} words\n")
 
     print(f"  {'sub-score':<17} {'base':>7} {'sft':>7} {'delta':>8} "
-          f"{'bar':>7}  verdict   rule")
+          f"{'bar':>7} {'amber>=':>8}  verdict")
     results = {}
     for s in ALL_SCORES:
         b, v = base["scores"][s], sft["scores"][s]
-        bar = bars[s]["bar"]
-        ok = v >= bar
+        bar, amber_floor = bars[s]["bar"], bars[s]["amber_floor"]
+        # Three-way, pre-registered. AMBER is not a pass: it says the shortfall
+        # is smaller than this eval can resolve, so the result is inconclusive
+        # rather than a clean miss. Per ADR-032 it does not license a third
+        # attempt either - that road is the laundering move in a lab coat.
+        state = "GREEN" if v >= bar else ("AMBER" if v >= amber_floor else "RED")
         results[s] = {"base": b, "sft": v, "delta": round(v - b, 6),
-                      "bar": bar, "pass": bool(ok),
+                      "bar": bar, "amber_floor": amber_floor,
+                      "state": state, "pass": state == "GREEN",
                       "kind": "delta" if s in DELTA_SCORES else "floor",
-                      "rule": bars[s]["rule"]}
-        print(f"  {s:<17} {b:>6.1%} {v:>6.1%} {(v - b) * 100:>+6.1f}pt {bar:>6.1%}  "
-              f"{'PASS' if ok else 'FAIL':<8}  {bars[s]['rule']}")
+                      "rule": bars[s]["rule"],
+                      "n_eff": bars[s]["n_eff"], "icc": bars[s]["icc"],
+                      "detection_floor": bars[s]["detection_floor"]}
+        print(f"  {s:<17} {b:>6.1%} {v:>6.1%} {(v - b) * 100:>+6.1f}pt {bar:>6.1%} "
+              f"{amber_floor:>7.1%}  {state}")
+    print(f"\n  bars, and the effective sample size each was priced on:")
+    for s in ALL_SCORES:
+        print(f"    {s:<17} n_eff {bars[s]['n_eff']:>6} (ICC {bars[s]['icc']:.3f} "
+              f"of {bars[s]['n']} prompts / {bars[s]['k']} subjects)  "
+              f"{bars[s]['rule']}")
 
     # The validity check. This can invalidate a PASS, which is the point: if
     # subject-mention climbed because the model names more nouns rather than the
@@ -464,16 +522,28 @@ def cmd_gate(cfg: Config) -> None:
     print(f"    above chance       base {above_b:>6.1%}  sft {above_s:>6.1%}  "
           f"({(above_s - above_b) * 100:+.1f}pt)")
 
-    deltas_pass = all(results[s]["pass"] for s in DELTA_SCORES)
-    floors_pass = all(results[s]["pass"] for s in FLOOR_SCORES)
-    green = deltas_pass and floors_pass and shuf_ok
-    print(f"\n  deltas  {'PASS' if deltas_pass else 'FAIL'}    "
-          f"floors  {'PASS' if floors_pass else 'FAIL'}    "
+    def roll(names):
+        st = [results[s]["state"] for s in names]
+        return "RED" if "RED" in st else ("AMBER" if "AMBER" in st else "GREEN")
+
+    deltas_state, floors_state = roll(DELTA_SCORES), roll(FLOOR_SCORES)
+    deltas_pass, floors_pass = deltas_state == "GREEN", floors_state == "GREEN"
+    overall = roll(ALL_SCORES)
+    if not shuf_ok:
+        overall = "RED"
+    green = overall == "GREEN"
+    print(f"\n  deltas  {deltas_state}    floors  {floors_state}    "
           f"validity  {'OK' if shuf_ok else 'BROKEN'}")
-    print(f"\n  PHASE 5: {'GREEN' if green else 'RED'}")
+    print(f"\n  PHASE 5 attempt #{cfg.sft_attempt}: {overall}")
+    if overall == "AMBER":
+        print("  AMBER is not a pass. The shortfall is smaller than this eval can")
+        print("  resolve, so the result is inconclusive - and per ADR-032 it does")
+        print("  not license a third attempt.")
 
     from utils.io import write_json
     write_json(REPO_ROOT / cfg.results_dir / "sft_gate.json", {
+        "attempt": cfg.sft_attempt, "verdict": overall,
+        "deltas_state": deltas_state, "floors_state": floors_state,
         "green": bool(green), "deltas_pass": bool(deltas_pass),
         "floors_pass": bool(floors_pass), "validity_ok": bool(shuf_ok),
         "decoding": d, "n": base["scores"]["n"],
@@ -487,21 +557,21 @@ def cmd_gate(cfg: Config) -> None:
         "config_hash": cfg.hash(), "sft_stage_hash": cfg.stage_hash("sft"),
     })
     print(f"wrote {REPO_ROOT / cfg.results_dir / 'sft_gate.json'}")
-    _write_gate_report(cfg, base, sft, results, bars, green, deltas_pass,
-                       floors_pass, shuf_ok)
+    _write_gate_report(cfg, base, sft, results, bars, overall, deltas_state,
+                       floors_state, shuf_ok)
     if not green:
         raise SystemExit(1)
 
 
 def _write_gate_report(cfg: Config, base: dict, sft: dict, results: dict,
-                       bars: dict, green: bool, deltas_pass: bool,
-                       floors_pass: bool, shuf_ok: bool) -> None:
+                       bars: dict, overall: str, deltas_state: str,
+                       floors_state: str, shuf_ok: bool) -> None:
     from utils.io import write_text
 
     d = base["decoding"]
     lo, hi = base["length_band"]
     lines = [
-        f"# Phase 5 gate: {'GREEN' if green else 'RED'}",
+        f"# Phase 5 gate, attempt #{cfg.sft_attempt}: {overall}",
         "",
         f"`base.pt` versus `sft.pt` on {base['scores']['n']} held-out prompts over "
         "**disjoint subjects**, at identical pinned decoding "
@@ -513,15 +583,15 @@ def _write_gate_report(cfg: Config, base: dict, sft: dict, results: dict,
         "Deltas were agreed before `src/sft.py` existed (ADR-027); the floors were "
         "set by rule before `sft.pt` was scored (ADR-029).",
         "",
-        "| sub-score | kind | base | sft | delta | bar | verdict | how the bar was set |",
-        "|---|---|---|---|---|---|---|---|",
+        "| sub-score | kind | base | sft | delta | bar | amber floor | verdict | n_eff | how the bar was set |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for s in ALL_SCORES:
         r = results[s]
         lines.append(
             f"| `{s}` | {r['kind']} | {r['base']:.1%} | {r['sft']:.1%} | "
-            f"{r['delta'] * 100:+.1f} pt | {r['bar']:.1%} | "
-            f"**{'PASS' if r['pass'] else 'FAIL'}** | {r['rule']} |")
+            f"{r['delta'] * 100:+.1f} pt | {r['bar']:.1%} | {r['amber_floor']:.1%} | "
+            f"**{r['state']}** | {r['n_eff']} | {r['rule']} |")
 
     sb = base["scores"]["subject_mention_shuffled"]
     ss = sft["scores"]["subject_mention_shuffled"]
@@ -552,11 +622,16 @@ def _write_gate_report(cfg: Config, base: dict, sft: dict, results: dict,
         "",
         "## Outcome",
         "",
-        f"- deltas: **{'PASS' if deltas_pass else 'FAIL'}**",
-        f"- floors: **{'PASS' if floors_pass else 'FAIL'}**",
+        f"- deltas: **{deltas_state}**",
+        f"- floors: **{floors_state}**",
         f"- validity: **{'OK' if shuf_ok else 'BROKEN'}**",
         "",
-        f"**PHASE 5: {'GREEN' if green else 'RED'}**",
+        f"**PHASE 5 attempt #{cfg.sft_attempt}: {overall}**",
+        "",
+        "Attempt #1 REDed and that result stands (ADR-032). This is a second "
+        "attempt beside it, not a replacement for it. AMBER, where it appears, "
+        "is not a pass: it means the shortfall is smaller than this eval can "
+        "resolve.",
         "",
         "Generated by `python -m src.checker gate`.",
     ]

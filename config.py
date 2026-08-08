@@ -133,6 +133,7 @@ STAGE_EXEMPT: dict[str, str] = {
     "sft_gate_subject_mention_min": "pre-registered gate threshold",
     "sft_gate_length_band_min": "pre-registered gate threshold",
     "sft_gate_floor_z": "pre-registered gate threshold (floor noise allowance)",
+    "sft_gate_amber_z": "pre-registered gate threshold (amber band width)",
     "sft_gate_is_story_min": "pre-registered gate threshold",
     "sft_gate_not_degenerate_min": "pre-registered gate threshold",
     "sft_gate_shuffled_max": "pre-registered gate threshold",
@@ -267,16 +268,18 @@ class Config:
     sft_gate_new_tokens: int = 245
     # Pre-registered before src/sft.py existed - see ADR-027 and git history.
     # The DELTA is the commitment; the bar is base + delta (ADR-028).
-    sft_gate_subject_mention_delta: float = 0.250
-    sft_gate_length_band_delta: float = 0.255
-    sft_gate_subject_mention_min: float = 0.60
-    sft_gate_length_band_min: float = 0.69
+    sft_gate_subject_mention_delta: float = 0.175
+    sft_gate_length_band_delta: float = 0.300
+    # AMBER floor = bar - z * SE at the EFFECTIVE n (ADR-033).
+    sft_gate_amber_z: float = 1.96
+    sft_gate_subject_mention_min: float = 0.653
+    sft_gate_length_band_min: float = 0.678
     # Floors are base minus the paired detection floor (ADR-029), not base
     # exactly: a floor at base is a coin flip at n=200.
     sft_gate_floor_z: float = 1.645
-    sft_gate_is_story_min: float = 0.701
-    sft_gate_not_degenerate_min: float = 0.662
-    sft_gate_shuffled_max: float = 0.10
+    sft_gate_is_story_min: float = 0.699
+    sft_gate_not_degenerate_min: float = 0.645
+    sft_gate_shuffled_max: float = 0.06
 
     # data
     dataset_name: str = "roneneldan/TinyStories"
