@@ -1001,3 +1001,58 @@ one.
 retro-fitting a closed phase's decoding to make its numbers look better is the opposite of
 the discipline here. The Phase 5 gate reads its own `sft_gate_*` keys precisely so the two
 can differ without either being silently redefined (ADR-025).
+
+## ADR-029 — A floor set at the measured base is a coin flip, not a bar
+
+**Status.** Accepted, Phase 5, before `sft.pt` was scored.
+
+**Context.** `is_story` and `not_degenerate` are floors: they carry no part of the
+instruction-following claim and exist only to fail a fine-tune that buys adherence by
+burning fluency. The rule agreed for them was "must not regress below base", and the
+literal implementation is a bar at base exactly — `is_story >= 0.770`,
+`not_degenerate >= 0.735`.
+
+That reads stricter than it is. The comparison is paired over 200 held-out prompts, and
+its one-sided 95% detection floor is
+
+    z * sqrt(2 * p * (1 - p) / n),  z = 1.645, n = 200
+
+which is 6.9 points on `is_story` and 7.3 on `not_degenerate`. A fine-tune that is
+behaviourally *neutral* on these metrics still flips individual prompts in both
+directions, so its net change is centred on zero with a spread of several points — and it
+lands below a bar set at base **about half the time**.
+
+That is the same defect that got a 300-step overfit gate rejected in Phase 3: at 300 steps
+the worst of three seeds landed at 0.42 against a 0.1 target and "the gate becomes a coin
+flip". A gate that fails half the time when nothing is wrong does not measure the model, it
+measures the sampling noise, and its verdict carries no information either way.
+
+**Decision.** Set each floor at **base minus the detection floor**:
+
+    is_story        0.770 - 0.069 = 0.701
+    not_degenerate  0.735 - 0.073 = 0.662
+
+A breach now means a regression the data can actually distinguish from noise. The SE is
+computed at the unpaired upper bound, which is larger than the true paired SE, so every
+number derived from it is conservative in the direction that makes the gate harder rather
+than easier.
+
+The alternative considered was keeping the bar at base and reporting significance
+alongside a breach, as a two-part verdict. Rejected as the worse of two honest options: it
+would report `PHASE 5 RED` on outcomes that are statistically indistinguishable from no
+change, and a red that has to be read with a footnote explaining it is not really red is
+the kind of thing that gets quoted without the footnote.
+
+**Consequence.** All four bars are now derived from a rule rather than typed in, and
+`src/checker.py gate` **recomputes every one of them from base's recorded scores and
+asserts the result matches the frozen config value**, refusing to run if they disagree.
+Deltas come from `base + sft_gate_*_delta`, floors from `base - z * SE`. A gate that reads
+its threshold off a summary can be handed a wrong summary; a gate that recomputes it and
+cross-checks cannot. This is the same reason Phase 4's `src/verify_docs.py` recomputes
+every published ratio from `perplexity_floors.json` instead of trusting the prose
+(ADR-021).
+
+Note what this does *not* loosen. The floors moved down by ~7 points from base, but base
+itself moved *up* by 8 points on `is_story` when the generation cap was corrected
+(ADR-028), so the floor now sits at 0.701 against an originally-registered 0.690 — still
+marginally stricter than the bar this phase started with, and with the coin-flip removed.

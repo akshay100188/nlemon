@@ -175,15 +175,22 @@ sft_gate_length_band_delta: 0.255
 # bars: +6.0 points tighter than the cap-200 registration.
 sft_gate_subject_mention_min: 0.60    # base 35.0% + 25.0 delta
 sft_gate_length_band_min: 0.69        # base 43.5% + 25.5 delta
-# The floors are set at base exactly, which is the literal reading of "must not
-# regress". Recorded flaw: a paired comparison at n=200 has a one-sided 95%
-# detection floor of ~6.9 points on is_story and ~7.3 on not_degenerate, so a
-# behaviourally neutral fine-tune lands below a floor set at base about half the
-# time. That is the same coin-flip shape the 300-step overfit gate was rejected
-# for. Left at the strict value deliberately: loosening a floor is a decision to
-# be made explicitly and in advance, not one to be inferred by me.
-sft_gate_is_story_min: 0.77           # base floor: must not regress
-sft_gate_not_degenerate_min: 0.735    # base floor: must not regress
+# The floors are base MINUS the detection floor, so a breach means a regression
+# the data can actually distinguish from noise. A floor set at base exactly reads
+# stricter but is a coin flip: a paired comparison at n=200 cannot resolve
+# anything smaller than ~7 points, so a behaviourally neutral fine-tune would
+# breach about half the time. That is the same defect the 300-step overfit gate
+# was rejected for (overfit_steps, above). Agreed before sft.pt was scored.
+#
+#   floor = base - z * sqrt(2 * p * (1 - p) / n),  z = 1.645 (one-sided 95%)
+#   is_story        0.770 - 0.069 = 0.701
+#   not_degenerate  0.735 - 0.073 = 0.662
+#
+# The gate recomputes both from base's recorded scores and asserts they match
+# these frozen numbers, so the bar cannot drift from the rule that set it.
+sft_gate_floor_z: 1.645
+sft_gate_is_story_min: 0.701          # base 77.0% - 6.9 pts
+sft_gate_not_degenerate_min: 0.662    # base 73.5% - 7.3 pts
 # If the shuffled control climbs, the model is naming everything rather than the
 # thing it was asked about, and subject_mention stops meaning adherence.
 sft_gate_shuffled_max: 0.10

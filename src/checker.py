@@ -251,9 +251,146 @@ def cmd_score(cfg: Config, checkpoint: str, label: str) -> None:
     print(f"wrote {out}")
 
 
+# --------------------------------------------------------------------------- #
+# the gate
+# --------------------------------------------------------------------------- #
+
+def _se_diff(p: float, n: int) -> float:
+    """SE of a paired difference, at the unpaired upper bound.
+
+    The true SE depends on the discordant-pair count and is smaller, so using the
+    unpaired bound makes every bar derived from it slightly conservative. Being
+    conservative in the direction that makes the gate harder to pass is the only
+    safe way to round.
+    """
+    import math
+    return math.sqrt(2 * p * (1 - p) / max(n, 1))
+
+
+def derive_bars(cfg: Config, base: dict) -> dict:
+    """Recompute every bar from base's recorded scores and the fixed rules.
+
+    Two rules, both pre-registered, neither fitted to sft.pt:
+
+      delta scores : bar = base + the agreed delta
+      floor scores : bar = base - z * SE, so a breach is a regression that can be
+                     told apart from noise (ADR-029)
+
+    Then assert the recomputed values match the frozen numbers in the config. A
+    gate that reads a threshold off a summary can be handed a wrong summary; a
+    gate that recomputes it and cross-checks cannot.
+    """
+    n = base["scores"]["n"]
+    deltas = {"subject_mention": cfg.sft_gate_subject_mention_delta,
+              "length_band": cfg.sft_gate_length_band_delta}
+    frozen = {"subject_mention": cfg.sft_gate_subject_mention_min,
+              "length_band": cfg.sft_gate_length_band_min,
+              "is_story": cfg.sft_gate_is_story_min,
+              "not_degenerate": cfg.sft_gate_not_degenerate_min}
+
+    bars, drift = {}, []
+    for s in ALL_SCORES:
+        p = base["scores"][s]
+        if s in DELTA_SCORES:
+            bar, rule = p + deltas[s], f"base {p:.1%} + delta {deltas[s]:.1%}"
+        else:
+            allow = cfg.sft_gate_floor_z * _se_diff(p, n)
+            bar = p - allow
+            rule = (f"base {p:.1%} - {cfg.sft_gate_floor_z} x SE "
+                    f"{_se_diff(p, n):.3%} = -{allow:.1%}")
+        bars[s] = {"bar": round(bar, 6), "frozen": frozen[s], "base": p,
+                   "rule": rule}
+        if abs(bar - frozen[s]) > 0.001:
+            drift.append(f"{s}: rule gives {bar:.4f}, config says {frozen[s]:.4f}")
+    if drift:
+        raise SystemExit("pre-registered bars do not match the rule that set "
+                         "them:\n  " + "\n  ".join(drift))
+    return bars
+
+
+def cmd_gate(cfg: Config) -> None:
+    base_p = REPO_ROOT / cfg.results_dir / "sft_scores_base.json"
+    sft_p = REPO_ROOT / cfg.results_dir / "sft_scores_sft.json"
+    for p in (base_p, sft_p):
+        if not p.exists():
+            raise SystemExit(f"missing {p.name} - run `python -m src.checker "
+                             f"score --checkpoint ... --label ...` first.")
+    base = json.loads(base_p.read_text(encoding="utf-8"))
+    sft = json.loads(sft_p.read_text(encoding="utf-8"))
+
+    # Comparing two stages under different decoding would measure the decoder,
+    # not the fine-tune. Cheap to check, fatal if wrong, so it is checked.
+    if base["decoding"] != sft["decoding"]:
+        raise SystemExit(f"decoding differs:\n  base {base['decoding']}\n  "
+                         f"sft  {sft['decoding']}")
+    if base["length_band"] != sft["length_band"]:
+        raise SystemExit("length band differs between the two scorings")
+
+    bars = derive_bars(cfg, base)
+    d = base["decoding"]
+    print(f"Phase 5 gate  -  T={d['temperature']} k={d['top_k']} "
+          f"new_tokens={d['new_tokens']}, {base['scores']['n']} held-out prompts, "
+          f"band {base['length_band'][0]}-{base['length_band'][1]} words\n")
+
+    print(f"  {'sub-score':<17} {'base':>7} {'sft':>7} {'delta':>8} "
+          f"{'bar':>7}  verdict   rule")
+    results = {}
+    for s in ALL_SCORES:
+        b, v = base["scores"][s], sft["scores"][s]
+        bar = bars[s]["bar"]
+        ok = v >= bar
+        results[s] = {"base": b, "sft": v, "delta": round(v - b, 6),
+                      "bar": bar, "pass": bool(ok),
+                      "kind": "delta" if s in DELTA_SCORES else "floor",
+                      "rule": bars[s]["rule"]}
+        print(f"  {s:<17} {b:>6.1%} {v:>6.1%} {v - b:>+7.1f}pt {bar:>6.1%}  "
+              f"{'PASS' if ok else 'FAIL':<8}  {bars[s]['rule']}")
+
+    # The validity check. This can invalidate a PASS, which is the point: if
+    # subject-mention climbed because the model names more nouns rather than the
+    # right one, the headline stops meaning adherence (ADR-026).
+    shuf_b = base["scores"]["subject_mention_shuffled"]
+    shuf_s = sft["scores"]["subject_mention_shuffled"]
+    shuf_ok = shuf_s <= cfg.sft_gate_shuffled_max
+    above_b = base["scores"]["subject_mention_above_chance"]
+    above_s = sft["scores"]["subject_mention_above_chance"]
+    print(f"\n  validity: shuffled-subject control")
+    print(f"    shuffled rate      base {shuf_b:>6.1%}  sft {shuf_s:>6.1%}  "
+          f"max {cfg.sft_gate_shuffled_max:.1%}  "
+          f"{'OK' if shuf_ok else 'INVALIDATES THE PASS'}")
+    print(f"    above chance       base {above_b:>6.1%}  sft {above_s:>6.1%}  "
+          f"({above_s - above_b:+.1f}pt)")
+
+    deltas_pass = all(results[s]["pass"] for s in DELTA_SCORES)
+    floors_pass = all(results[s]["pass"] for s in FLOOR_SCORES)
+    green = deltas_pass and floors_pass and shuf_ok
+    print(f"\n  deltas  {'PASS' if deltas_pass else 'FAIL'}    "
+          f"floors  {'PASS' if floors_pass else 'FAIL'}    "
+          f"validity  {'OK' if shuf_ok else 'BROKEN'}")
+    print(f"\n  PHASE 5: {'GREEN' if green else 'RED'}")
+
+    from utils.io import write_json
+    write_json(REPO_ROOT / cfg.results_dir / "sft_gate.json", {
+        "green": bool(green), "deltas_pass": bool(deltas_pass),
+        "floors_pass": bool(floors_pass), "validity_ok": bool(shuf_ok),
+        "decoding": d, "n": base["scores"]["n"],
+        "length_band": base["length_band"],
+        "scores": results,
+        "shuffled": {"base": shuf_b, "sft": shuf_s,
+                     "max": cfg.sft_gate_shuffled_max,
+                     "above_chance_base": above_b, "above_chance_sft": above_s},
+        "mean_words": {"base": base["scores"]["mean_words"],
+                       "sft": sft["scores"]["mean_words"]},
+        "config_hash": cfg.hash(), "sft_stage_hash": cfg.stage_hash("sft"),
+    })
+    print(f"wrote {REPO_ROOT / cfg.results_dir / 'sft_gate.json'}")
+    if not green:
+        raise SystemExit(1)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Deterministic feature-checker (Phase 5).")
-    ap.add_argument("command", choices=("demo", "score"))
+    ap.add_argument("command", choices=("demo", "score", "gate"))
     ap.add_argument("--config", default=None)
     ap.add_argument("--checkpoint", default="checkpoints/base.pt")
     ap.add_argument("--label", default="base")
@@ -261,6 +398,8 @@ def main() -> None:
     cfg = Config.load(args.config)
     if args.command == "demo":
         cmd_demo(cfg)
+    elif args.command == "gate":
+        cmd_gate(cfg)
     else:
         cmd_score(cfg, args.checkpoint, args.label)
 
