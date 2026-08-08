@@ -1,0 +1,67 @@
+{
+  "green": false,
+  "deltas_pass": false,
+  "floors_pass": true,
+  "validity_ok": true,
+  "decoding": {
+    "temperature": 0.8,
+    "top_k": 40,
+    "new_tokens": 245
+  },
+  "n": 200,
+  "length_band": [
+    102,
+    200
+  ],
+  "scores": {
+    "subject_mention": {
+      "base": 0.35,
+      "sft": 0.5,
+      "delta": 0.15,
+      "bar": 0.6,
+      "pass": false,
+      "kind": "delta",
+      "rule": "base 35.0% + delta 25.0%"
+    },
+    "length_band": {
+      "base": 0.435,
+      "sft": 0.955,
+      "delta": 0.52,
+      "bar": 0.69,
+      "pass": true,
+      "kind": "delta",
+      "rule": "base 43.5% + delta 25.5%"
+    },
+    "is_story": {
+      "base": 0.77,
+      "sft": 0.985,
+      "delta": 0.215,
+      "bar": 0.700773,
+      "pass": true,
+      "kind": "floor",
+      "rule": "base 77.0% - 1.645 x SE 4.208% = -6.9%"
+    },
+    "not_degenerate": {
+      "base": 0.735,
+      "sft": 0.855,
+      "delta": 0.12,
+      "bar": 0.662401,
+      "pass": true,
+      "kind": "floor",
+      "rule": "base 73.5% - 1.645 x SE 4.413% = -7.3%"
+    }
+  },
+  "shuffled": {
+    "base": 0.07,
+    "sft": 0.085,
+    "max": 0.1,
+    "above_chance_base": 0.28,
+    "above_chance_sft": 0.415
+  },
+  "mean_words": {
+    "base": 100.86,
+    "sft": 142.09
+  },
+  "config_hash": "37a936623d50",
+  "sft_stage_hash": "0c4289f96c04"
+}

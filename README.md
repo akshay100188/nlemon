@@ -299,6 +299,16 @@ real validation documents give a p5–p95 band, and generated text has to land i
 | out-of-vocabulary rate | pooled, bootstrapped | 0.0000 | 0.0000 – 0.0021 |
 | OOV plausibility | pooled, bootstrapped | n/a — invents nothing | -2.7517 – -1.8522 |
 
+> **Scope of this green, narrowed after the fact.** These numbers are measured on
+> *continuation* prompts — "Once upon a time" and friends, the shape a pretrained model was
+> trained on. Phase 5 scored the same checkpoint on **instruction** prompts and base leaves
+> the band: `oov_rate` 0.006097 against a ceiling of 0.002114, three times over, because a
+> model that cannot parse "Write a story about…" emits mangled forms of the instruction verb
+> (`tellow` ×24, `mrite` ×21, `telle` ×9). The row above says *invents nothing*; the honest
+> version is *invents nothing when continuing text*. The coherence green holds for the
+> distribution it was measured on and was silently broader than its measurement.
+> See [ADR-031](ADR.md#adr-031--the-oov_plausibility-bands-first-live-firing-was-on-base-not-sft).
+
 Both edges of each band are checked on purpose: too much repetition is degenerate, and too
 *little* is also suspicious, because real children's stories repeat names deliberately. The
 [decoding sweep](results/decoding_sweep.md) shows both failures happening — cold sampling

@@ -88,6 +88,14 @@ sft_min_subject_count: 200      # a candidate subject must be this common
 # test alone promotes adjectives ("a brave bird" makes 'brave' look like a
 # subject), and "Write a story about a brave." is not an instruction.
 sft_min_head_ratio: 0.5
+# ...and must be something a story can be ABOUT, not merely something a story
+# walks past. The headedness filter cannot do this job and never could: in
+# "a floor", floor IS the head. Attempt #1 shipped without it and 47.8% of pairs
+# taught their subject at one mention or fewer (ADR-030). A story genuinely
+# about a rabbit says "rabbit" repeatedly.
+sft_min_aboutness: 2          # occurrences in a doc for it to count as "about"
+sft_min_aboutness_ratio: 0.5  # share of a subject's docs that must clear it
+sft_attempt: 2                # Phase 5 attempt; #1 REDed and stands (ADR-032)
 sft_heldout_subject_frac: 0.2
 sft_max_pairs: 40000
 sft_eval_prompts: 200

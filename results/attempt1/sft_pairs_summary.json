@@ -1,0 +1,15 @@
+{
+  "train_pairs": 40000,
+  "heldout_prompts": 200,
+  "distinct_train_subjects": 320,
+  "distinct_heldout_subjects": 50,
+  "subject_overlap": 0,
+  "response_words_p5": 102,
+  "response_words_p95": 200,
+  "templates": [
+    "Write a story about {subject}.",
+    "Tell me a story about {subject}.",
+    "Write a short story about {subject}.",
+    "Can you write a story about {subject}?"
+  ]
+}

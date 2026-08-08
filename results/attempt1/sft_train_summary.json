@@ -1,0 +1,16 @@
+{
+  "steps": 1734,
+  "epochs": 3,
+  "steps_per_epoch": 578,
+  "train_pairs": 37052,
+  "val_pairs": 756,
+  "base_val_loss_before_sft": 1.701066,
+  "best_val_loss": 1.614871,
+  "best_step": 1700,
+  "val_loss_improvement": 0.086196,
+  "lr": 5e-05,
+  "elapsed_s": 425.5,
+  "device": "NVIDIA GeForce RTX 3050 A Laptop GPU",
+  "sft_stage_hash": "0c4289f96c04",
+  "config_hash": "2e57993c8b53"
+}

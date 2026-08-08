@@ -68,21 +68,40 @@ HEAD_FOLLOWERS = frozenset("""
 NEXT_WORD = re.compile(r"\s+([a-z]+)")
 
 
-def mine_subjects(cfg: Config) -> tuple[Counter, Counter]:
-    """Count determiner-followed words, and how often each is the *head*.
+def mine_subjects(cfg: Config) -> tuple[Counter, Counter, Counter, Counter]:
+    """Count determiner-followed words: occurrences, heads, doc hits, and aboutness.
 
-    The determiner test alone cannot tell a noun from an adjective: "a brave
-    bird" makes `brave` look like a subject, and "Write a story about a brave."
-    is not an instruction. A head is followed by punctuation or a word that
-    cannot be a noun ("a bird was..."); a modifier is followed by the actual
-    noun. Both counts are corpus-derived, so the filter is measured rather than a
-    hand-written adjective list I would have to keep complete.
+    Three filters stack here, and they catch different things.
+
+    **Headedness** (`heads / counts`) separates a noun from an adjective. The
+    determiner test alone cannot: "a brave bird" makes `brave` look like a
+    subject, and "Write a story about a brave." is not an instruction. A head is
+    followed by punctuation or a word that cannot be a noun ("a bird was...");
+    a modifier is followed by the actual noun.
+
+    **Aboutness** (`doc_about / doc_hits`) separates a subject from a passing
+    mention, and it is the filter attempt #1 lacked (ADR-030). Headedness cannot
+    do this job and never could: in "a floor", `floor` **is** the head. A story
+    genuinely about a rabbit says "rabbit" repeatedly; a story that merely
+    happens near a floor says "floor" once. So a document counts toward a
+    subject's aboutness only if the word occurs at least `sft_min_aboutness`
+    times in it.
+
+    **Absolute count** filters rarity. This one is worth keeping separate in the
+    reporting even though it is the same threshold, because it fails a *different
+    class* of word: `moral` fails aboutness (common, never a protagonist), while
+    `lizard` fails rarity (a fine protagonist, just scarce in TinyStories). A
+    pool that shrinks needs to say which cause did it - the two have different
+    implications for whether the remaining pool is any good.
     """
     counts: Counter = Counter()
     heads: Counter = Counter()
+    doc_hits: Counter = Counter()
+    doc_about: Counter = Counter()
     for doc in iter_docs(text_path(cfg, "train"), cfg.doc_separator,
                          limit=cfg.sft_subject_scan_docs):
         low = doc.lower()
+        seen: set[str] = set()
         for m in DETERMINER.finditer(low):
             w = m.group(1)
             if w in STOPWORDS:
@@ -91,7 +110,16 @@ def mine_subjects(cfg: Config) -> tuple[Counter, Counter]:
             nxt = NEXT_WORD.match(low, m.end())
             if nxt is None or nxt.group(1) in HEAD_FOLLOWERS:
                 heads[w] += 1
-    return counts, heads
+            seen.add(w)
+        if not seen:
+            continue
+        words = WORD.findall(low)
+        freq = Counter(words)
+        for w in seen:
+            doc_hits[w] += 1
+            if freq[w] >= cfg.sft_min_aboutness:
+                doc_about[w] += 1
+    return counts, heads, doc_hits, doc_about
 
 
 def head_ratios(counts: Counter, heads: Counter) -> dict[str, float]:
@@ -141,16 +169,32 @@ def build_pairs(cfg: Config, subjects: set[str], limit: int,
     """
     rng = random.Random(cfg.seed + (0 if split_name == "train" else 1))
     pairs: list[dict] = []
+    dropped_unabout = 0
     for doc in iter_docs(text_path(cfg, "train"), cfg.doc_separator,
                          limit=cfg.sft_pair_scan_docs):
         low = doc.lower()
+        freq = Counter(WORD.findall(low))
+        # Attempt #2: pick the MOST-REPEATED candidate, not the earliest one
+        # (ADR-030). "Earliest determiner" picks whatever the story walked past
+        # first, which is how `Write a story about a floor.` got paired with a
+        # story that says "floor" once. What a story keeps returning to is what
+        # it is about; ties break on position, so the choice stays deterministic.
         best = None
-        best_at = len(low) + 1
+        best_key = None
         for m in DETERMINER.finditer(low):
             w = m.group(1)
-            if w in subjects and m.start() < best_at:
-                best, best_at = w, m.start()
+            if w not in subjects:
+                continue
+            key = (freq[w], -m.start())
+            if best_key is None or key > best_key:
+                best, best_key = w, key
         if best is None:
+            continue
+        # ...and the winner still has to clear the aboutness bar outright. A pool
+        # subject is one that CAN be a protagonist; this pair has to show that it
+        # IS one here.
+        if freq[best] < cfg.sft_min_aboutness:
+            dropped_unabout += 1
             continue
         words = doc.split()
         if not (cfg.sft_min_response_words <= len(words) <= cfg.sft_max_response_words):
@@ -161,9 +205,13 @@ def build_pairs(cfg: Config, subjects: set[str], limit: int,
             "prompt": template.format(subject=subject_phrase(best)),
             "response": doc,
             "response_words": len(words),
+            "subject_occurrences": freq[best],
         })
         if len(pairs) >= limit:
             break
+    if dropped_unabout:
+        print(f"    dropped {dropped_unabout:,} docs whose best candidate appeared "
+              f"< {cfg.sft_min_aboutness}x (passing mention, not a subject)")
     return pairs
 
 
@@ -174,20 +222,39 @@ def format_example(cfg: Config, prompt: str, response: str) -> str:
 
 def cmd_subjects(cfg: Config) -> None:
     print(f"scanning {cfg.sft_subject_scan_docs:,} training docs for subjects...")
-    counts, heads = mine_subjects(cfg)
+    counts, heads, doc_hits, doc_about = mine_subjects(cfg)
     ratios = head_ratios(counts, heads)
+    about_ratios = {w: doc_about[w] / n for w, n in doc_hits.items() if n}
 
-    dropped = sorted(
-        (w for w, n in counts.most_common(cfg.sft_subject_pool * 2)
-         if n >= cfg.sft_min_subject_count
-         and ratios.get(w, 0.0) < cfg.sft_min_head_ratio),
-        key=lambda w: -counts[w])
-    kept = Counter({w: n for w, n in counts.items()
-                    if ratios.get(w, 0.0) >= cfg.sft_min_head_ratio})
-    print(f"  {len(counts):,} candidate words")
-    print(f"  headedness filter (>= {cfg.sft_min_head_ratio:.0%}) dropped "
-          f"{len(dropped)} modifier-like words, e.g. "
-          f"{', '.join(dropped[:10])}")
+    considered = [w for w, n in counts.most_common(cfg.sft_subject_pool * 3)
+                  if n >= cfg.sft_min_subject_count]
+    drop_head = [w for w in considered
+                 if ratios.get(w, 0.0) < cfg.sft_min_head_ratio]
+    survives_head = [w for w in considered if w not in set(drop_head)]
+    # Two causes, reported apart (ADR-030). A word can fail because it is never
+    # what a story is about, or because it is simply scarce - and `lizard` versus
+    # `moral` is exactly that distinction.
+    drop_about = [w for w in survives_head
+                  if about_ratios.get(w, 0.0) < cfg.sft_min_aboutness_ratio]
+    drop_thin = [w for w in survives_head
+                 if w not in set(drop_about)
+                 and doc_about[w] < cfg.sft_min_subject_count]
+    kept = Counter({w: doc_about[w] for w in survives_head
+                    if w not in set(drop_about) and w not in set(drop_thin)})
+
+    print(f"  {len(counts):,} candidate words, {len(considered)} above the "
+          f"{cfg.sft_min_subject_count} occurrence floor")
+    print(f"\n  filter 1  headedness >= {cfg.sft_min_head_ratio:.0%}"
+          f"           dropped {len(drop_head):>4}  (modifiers)")
+    print(f"            e.g. {', '.join(sorted(drop_head, key=lambda w: -counts[w])[:10])}")
+    print(f"  filter 2  aboutness ratio >= {cfg.sft_min_aboutness_ratio:.0%}"
+          f"    dropped {len(drop_about):>4}  (never what a story is ABOUT)")
+    print(f"            e.g. {', '.join(sorted(drop_about, key=lambda w: -counts[w])[:12])}")
+    print(f"  filter 3  >= {cfg.sft_min_subject_count} aboutness docs"
+          f"        dropped {len(drop_thin):>4}  (fine subjects, just scarce)")
+    print(f"            e.g. {', '.join(sorted(drop_thin, key=lambda w: -doc_about[w])[:12])}")
+    print(f"\n  pool after all three filters: {len(kept)} subjects "
+          f"(attempt #1 had {cfg.sft_subject_pool} considered, no aboutness filter)")
 
     split = split_subjects(cfg, kept)
     train, held = split["train_subjects"], split["heldout_subjects"]
@@ -203,16 +270,31 @@ def cmd_subjects(cfg: Config) -> None:
     print(f"\n  held-out sample: {', '.join(held[:14])}")
 
     write_json(REPO_ROOT / cfg.results_dir / "sft_subjects.json", {
+        "attempt": 2,
         "scan_docs": cfg.sft_subject_scan_docs,
         "pool": cfg.sft_subject_pool,
         "min_count": cfg.sft_min_subject_count,
         "heldout_fraction": cfg.sft_heldout_subject_frac,
         "min_head_ratio": cfg.sft_min_head_ratio,
-        "dropped_as_modifiers": dropped[:60],
+        "min_aboutness": cfg.sft_min_aboutness,
+        "min_aboutness_ratio": cfg.sft_min_aboutness_ratio,
+        # The two shrinkage causes stay apart: a word can fail because no story
+        # is ever about it, or because it is scarce. Different implications.
+        "considered": len(considered),
+        "dropped_as_modifiers": sorted(drop_head, key=lambda w: -counts[w])[:60],
+        "dropped_as_not_about": sorted(drop_about, key=lambda w: -counts[w])[:80],
+        "dropped_as_too_scarce": sorted(drop_thin, key=lambda w: -doc_about[w])[:80],
+        "n_dropped_modifiers": len(drop_head),
+        "n_dropped_not_about": len(drop_about),
+        "n_dropped_too_scarce": len(drop_thin),
+        "pool_size": len(kept),
         "n_train": len(train), "n_heldout": len(held),
         "overlap": len(set(train) & set(held)),
         "train_subjects": train, "heldout_subjects": held,
         "frequency": split["counts"],
+        "aboutness_docs": {w: doc_about[w] for w in train + held},
+        "aboutness_ratio": {w: round(about_ratios.get(w, 0.0), 4)
+                            for w in train + held},
         "head_ratio": {w: round(ratios.get(w, 0.0), 4)
                        for w in train + held},
     })

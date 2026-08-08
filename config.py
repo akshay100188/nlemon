@@ -72,6 +72,7 @@ STAGE_FIELDS: dict[str, tuple[str, ...]] = {
         "weight_decay", "beta1", "beta2", "grad_clip", "min_lr_ratio",
         "sft_subject_scan_docs", "sft_pair_scan_docs", "sft_subject_pool",
         "sft_min_subject_count", "sft_min_head_ratio",
+        "sft_min_aboutness", "sft_min_aboutness_ratio",
         "sft_heldout_subject_frac", "sft_max_pairs",
         "sft_min_response_words", "sft_max_response_words",
         "sft_lr", "sft_epochs", "sft_micro_batch", "sft_grad_accum_steps",
@@ -115,6 +116,7 @@ STAGE_EXEMPT: dict[str, str] = {
     "decode_sweep_new_tokens": "evidence sweep",
     # The SFT dataset-construction fields moved INTO the "sft" stage hash when
     # sft.py landed; only the ones that touch no weight stay exempt.
+    "sft_attempt": "bookkeeping: which Phase 5 attempt an artifact belongs to",
     "sft_eval_prompts": "gate evaluation set size; no weight depends on it",
     "sft_eval_interval": "bookkeeping: how often SFT validation runs",
     "checker_min_sentences": "gate threshold",
@@ -225,6 +227,12 @@ class Config:
     sft_subject_pool: int = 400
     sft_min_subject_count: int = 200
     sft_min_head_ratio: float = 0.5
+    # Attempt #2 (ADR-030/032): a document counts toward a subject's aboutness
+    # only if the word occurs this many times in it, and a subject enters the
+    # pool only if that holds for this share of its documents.
+    sft_min_aboutness: int = 2
+    sft_min_aboutness_ratio: float = 0.5
+    sft_attempt: int = 2
     sft_heldout_subject_frac: float = 0.2
     sft_max_pairs: int = 40_000
     sft_eval_prompts: int = 200

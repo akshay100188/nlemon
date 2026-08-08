@@ -434,7 +434,7 @@ def cmd_build(cfg: Config) -> None:
 # the mask assertion (ADR-014 shape: test the property, not the proxy)
 # --------------------------------------------------------------------------- #
 
-def cmd_mask(cfg: Config) -> None:
+def assert_mask(cfg: Config, verbose: bool = True) -> dict:
     """Assert the mask directly, on one pair, before any training step.
 
     A masking bug that is wrong still trains to a plausible loss curve, because
@@ -442,11 +442,22 @@ def cmd_mask(cfg: Config) -> None:
     easy and pulls the average down. A broken mask therefore looks like a healthy
     run. Same shape as the causal-mask check in Phase 3 (ADR-014): assert the
     property, never the proxy.
+
+    **`src.sft.train` calls this function, not a receipt file.** The first version
+    of this check wrote a JSON receipt that the trainer read, which is the exact
+    weakness this project has already named twice: a gate that reads a summary can
+    be handed a stale one. Edit `pack()` after running the CLI and the receipt
+    still says "passed". Recomputing costs one forward-free tensor build, so there
+    is no reason to trust a file instead (ADR-021, ADR-029).
     """
     import torch
     import torch.nn.functional as F
 
     from src.tokenizer import load as load_tokenizer
+
+    def say(*a):
+        if verbose:
+            print(*a)
 
     tok = load_tokenizer(cfg)
     eot = tok.token_to_id(cfg.doc_separator)
@@ -459,15 +470,15 @@ def cmd_mask(cfg: Config) -> None:
     plen, rlen = rec["prompt_tokens"], rec["response_tokens"]
     seq_positions = rec["total_tokens"] - 1     # positions in x that carry a target
 
-    print(f"pair 0: prompt {plen} tokens, response {rlen} tokens, "
+    say(f"pair 0: prompt {plen} tokens, response {rlen} tokens, "
           f"total {rec['total_tokens']}")
-    print(f"  prompt: {pair['prompt']!r}")
+    say(f"  prompt: {pair['prompt']!r}")
 
     # 1. every prompt-predicting position is IGNORE
     prompt_region = y[0, :plen - 1]
     assert (prompt_region == IGNORE).all(), \
         f"{int((prompt_region != IGNORE).sum())} prompt positions are supervised"
-    print(f"  positions 0..{plen - 2} (targets are prompt tokens) : all IGNORE  OK")
+    say(f"  positions 0..{plen - 2} (targets are prompt tokens) : all IGNORE  OK")
 
     # 2. every response-predicting position is a real token, and the RIGHT one
     resp_region = y[0, plen - 1:seq_positions]
@@ -475,19 +486,19 @@ def cmd_mask(cfg: Config) -> None:
         f"{int((resp_region == IGNORE).sum())} response positions are masked"
     expected = np.array(rec["response_ids"], dtype=np.int32)
     assert np.array_equal(resp_region, expected), "response targets are misaligned"
-    print(f"  positions {plen - 1}..{seq_positions - 1} (targets are response tokens): "
+    say(f"  positions {plen - 1}..{seq_positions - 1} (targets are response tokens): "
           f"all supervised, and equal to response_ids  OK")
 
     # 3. padding is IGNORE
     pad = y[0, seq_positions:]
     assert (pad == IGNORE).all(), "padding is supervised"
-    print(f"  positions {seq_positions}..{cfg.context_len - 1} (padding) : "
+    say(f"  positions {seq_positions}..{cfg.context_len - 1} (padding) : "
           f"all IGNORE  OK")
 
     # 4. count matches: supervised positions == response tokens
     sup = int((y[0] != IGNORE).sum())
     assert sup == rlen, f"supervised {sup} != response tokens {rlen}"
-    print(f"  supervised count {sup} == response tokens {rlen}  OK")
+    say(f"  supervised count {sup} == response tokens {rlen}  OK")
 
     # 5. the loss itself: finite, and built from exactly `rlen` terms.
     # Asserting on y alone would leave open whether cross_entropy honours it, so
@@ -502,13 +513,13 @@ def cmd_mask(cfg: Config) -> None:
     assert torch.isfinite(per_pos).all(), "loss is not finite"
     mean = F.cross_entropy(logits.view(-1, cfg.vocab_size), yt.view(-1),
                            ignore_index=IGNORE)
-    print(f"  cross_entropy: {nonzero} live terms == {rlen} response tokens  OK")
-    print(f"  random-logit loss {mean:.4f} ~ ln(vocab) "
+    say(f"  cross_entropy: {nonzero} live terms == {rlen} response tokens  OK")
+    say(f"  random-logit loss {mean:.4f} ~ ln(vocab) "
           f"{float(np.log(cfg.vocab_size)):.4f}  OK")
 
-    # The receipt. `src.sft.train` refuses to start without it, so the assertion
-    # cannot be skipped by anyone in a hurry - including me.
-    write_json(REPO_ROOT / cfg.results_dir / "sft_mask_assertion.json", {
+    # The record is returned to the caller AND written out. `src.sft.train` uses
+    # the return value, not the file - the file is only an artifact for a reader.
+    record = {
         "passed": True,
         "context_len": cfg.context_len,
         "pair_index": 0,
@@ -528,9 +539,11 @@ def cmd_mask(cfg: Config) -> None:
             "cross_entropy live-term count equals response token count",
             "loss is finite",
         ],
-    })
-    print("\nmask assertion PASSED on the tensor the optimizer sees.")
-    print(f"wrote {REPO_ROOT / cfg.results_dir / 'sft_mask_assertion.json'}")
+    }
+    write_json(REPO_ROOT / cfg.results_dir / "sft_mask_assertion.json", record)
+    say("\nmask assertion PASSED on the tensor the optimizer sees.")
+    say(f"wrote {REPO_ROOT / cfg.results_dir / 'sft_mask_assertion.json'}")
+    return record
 
 
 def main() -> None:
@@ -539,7 +552,8 @@ def main() -> None:
     ap.add_argument("--config", default=None)
     args = ap.parse_args()
     cfg = Config.load(args.config)
-    {"census": cmd_census, "build": cmd_build, "mask": cmd_mask}[args.command](cfg)
+    {"census": cmd_census, "build": cmd_build,
+     "mask": lambda c: assert_mask(c, verbose=True)}[args.command](cfg)
 
 
 if __name__ == "__main__":

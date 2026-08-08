@@ -519,6 +519,17 @@ Both edges are checked deliberately. Excess repetition is degenerate; **too litt
 suspicious**, because real children's stories repeat names and phrases on purpose, and a
 model that never repeats is not imitating this corpus.
 
+**Scope, added retroactively in Phase 5 (ADR-031).** This gate generates from
+`GALLERY_PROMPTS`, which are all *continuations* — the shape a pretrained model was trained
+on. The green is therefore a claim about coherence **under continuation prompts**, and the
+text above did not say so. It should have: scored on *instruction* prompts, the same
+`base.pt` leaves the `oov_rate` band at 0.006097 against a 0.002114 ceiling, emitting
+mangled instruction verbs (`tellow`, `mrite`, `telle`). Nothing measured here was wrong; the
+claim was broader than the measurement, which is the same defect as an unexplained remainder
+and gets the same treatment — narrow the claim where it was published rather than leave a
+reader to discover the boundary. A coherence gate that wants to be prompt-distribution
+independent has to sample prompts from more than one distribution, and this one does not.
+
 **Rejected.**
 - *Hand-picked thresholds* — "repetition below 0.3" is one person's guess wearing the
   costume of a measurement. Every number here is derived from the data it judges.
@@ -1073,6 +1084,16 @@ across any of the 200 responses. The list is the finding — `adventure`, `edge`
 against a perfectly-scoring set of `bunny`, `frog`, `duck`, `prince`, `carrot`, `candy`,
 `basket`.
 
+**`lizard` breaks the tidy version of that story, and the exception is informative.** Eleven
+of the twelve are abstract, spatial, or mass nouns that cannot be a protagonist. `lizard` is
+a concrete animal that should behave like `bunny` and `frog` and does not, so aboutness
+structure cannot be the whole explanation — the remaining cause is **corpus frequency**.
+Lizards are rare in TinyStories, so the pairs were thin and the binding was learned weakly.
+That means the retry's aboutness filter will drop `lizard` for a *different reason* than it
+drops `moral`, and the re-derived pool therefore loses subjects to two causes at once:
+structural unaboutability and plain rarity. Both must be reported separately, because a pool
+that shrinks hard widens the confidence interval on the next delta.
+
 **The cause.** `build_pairs` requires the subject to *appear* in the document. Appearing is
 not aboutness. "Once upon a time a girl dropped her toy on the floor" contains "a floor" as
 the head of a determiner phrase, so the miner accepts it, and the pair then teaches
@@ -1103,12 +1124,28 @@ the legitimate head of its own phrase.
 **What this does not do.** It does not soften the RED. The bar was base plus 25.0 points,
 anchored to base measured on **the same 200 prompts**, including the unanswerable ones. Both
 sides paid the same penalty, so the comparison is apples-to-apples and the delta is the
-honest quantity. And on the 160 prompts whose subject was mentioned by at least one model,
-base scores 38.8% and sft 62.5% — a delta of **+23.8 points against a registered +25.0**.
-The bar is missed on the clean subset too, narrowly. The model came up short; the data made
-it come up shorter.
+honest quantity.
 
-Reporting the 160-prompt figure as the result would be the laundering move this project has
+**And the "clean subset" number is weaker than first reported, because the subset is
+outcome-selected.** On the 160 prompts whose subject was mentioned by at least one model,
+base scores 38.8% and sft 62.5% — a delta of +23.8 against a registered +25.0. That still
+misses, so the direction of the conclusion is unchanged, but the *criterion* is circular and
+must be labelled: "answerable" was defined as **mentioned at least once by the run's own
+generations**. `sft` cannot mention an unanswerable subject — had it done so, that subject
+would have been classified answerable — so `sft`'s 0-for-40 on the excluded set is
+definitional rather than measured, and nothing in that subset can falsify anything. The
+subset was selected using the very outcome it is being used to diagnose.
+
+The model-independent criterion is **corpus aboutness**: does the corpus contain enough
+documents that are genuinely about this subject? That is a property of the data alone,
+measurable before any model runs, and it is exactly the filter the retry uses at pair
+construction. So the metric that gates pair construction *is* the answerability definition
+this diagnosis needed, and the defensible clean delta falls out of the retry's own pool
+derivation rather than being carved after the fact. Reported here as **+23.8 on an
+outcome-selected subset**, which is worth less than it looks and is expected to fall once the
+criterion is model-independent — a direction that firms the RED up rather than softening it.
+
+Reporting the 160-prompt figure as *the result* would be the laundering move this project has
 already named once, in the length case: a bar the data was structurally incapable of
 clearing, pre-registered anyway, then re-read after the fact against a subset chosen because
 it was kinder. The subset number is a diagnosis of *why*, and it stays labelled as one.
@@ -1183,3 +1220,66 @@ from corpus groups holding orders of magnitude more (ADR-022); the number is rea
 no evidence. `cmd_oov` prints the caveat inline rather than leaving a reader to infer it,
 because "OUT OF BAND" next to a number is exactly the kind of thing that gets quoted without
 its sample size.
+
+## ADR-032 — Phase 5 attempt #2: the RED stands, and this is a second attempt beside it
+
+**Status.** Accepted, **before** any retry code was written or any retry data derived.
+
+**The framing, first, because it is the thing that keeps a retry from becoming a rescue.**
+
+Phase 5 is RED. That is recorded at `3d8ba40` through `31f0789`, it is real on its own terms,
+and it is real on the outcome-selected clean subset too (+23.8 against a registered +25.0).
+**Nothing in this ADR converts it to green.** A retry does not un-record a failure; it adds a
+second attempt beside the first. The permanent story of this phase is *"Phase 5 REDed, here
+is why, here is attempt two"* — never *"Phase 5 passed on the second go."* Any future
+write-up, README table, or scorecard that reports a green Phase 5 without reporting the RED
+that preceded it is misreporting this project.
+
+**Why the retry happens, and it is not the number.** Phase 6 fine-tunes DPO *on top of*
+`sft.pt`. A checkpoint that does not reliably track what it was asked about is the foundation
+preference learning would inherit, and the defect would propagate into a phase whose whole
+premise is "the model already follows instructions; now teach it which answers are better."
+The retry buys a sound foundation for the next phase, not a better scalar in this one.
+
+**The test that separates a fair re-registration from bar-moving.** *Would this change be
+made if the gate had passed?* Yes, unambiguously. 47.8% of the training pairs teach their
+subject at one mention or fewer, so nearly half the supervision never demonstrated aboutness
+at all. That is a broken teaching instrument regardless of which way the gate went, and
+fixing it is validity work — the same family as fixing the leak detector or the generation
+cap, both of which were also found by looking rather than prompted by a failure.
+
+Contrast the move that was correctly refused: **rescoring the existing `sft.pt` against a
+friendlier subject pool.** That change would only ever be made *because* the gate failed, it
+retrains nothing, and it does not even work — `sft.pt` misses +25 on the clean subset anyway.
+The distinction is not rhetorical, and it is checkable in the repo: attempt #2 changes the
+**data** and **retrains**, which moves the `sft` stage hash. A rescore would have left every
+hash untouched. The stage hash is what proves which act occurred.
+
+**Three constraints, pre-committed.**
+
+1. **The subject pool is re-derived by corpus aboutness, not by what a model happened to
+   mention.** A model-derived criterion would be circular, which is the flaw ADR-030 records
+   in its own +23.8 figure. Corpus aboutness is a property of the data, measurable with no
+   model in the room.
+
+2. **The base floor is re-derived from scratch and the delta is re-argued from scratch.
+   +25.0 is not carried over.** It was calibrated against a pool that is about to change
+   composition: filtering to concrete, answerable subjects should *raise* base's floor,
+   because prompts like "Write a story about a bunny." are ones even a pretrained model
+   stumbles into answering. `base + 25` measured off a higher floor is a different and harder
+   claim, and pretending it is the same commitment would be the pre-registration equivalent
+   of moving a goalpost while claiming not to have touched it. The new delta and the amber
+   band are argued from the new pool's size and the new floor, before the run.
+
+3. **One retry.** If attempt #2 REDs again on clean aboutness data, that is **not** grounds
+   for a third filter. It is the capacity finding — a 14M-parameter model cannot hold subject
+   adherence at the registered level while staying coherent — and the honest response is to
+   report the measured ceiling and let Phase 6 proceed on the best `sft.pt` available with
+   that ceiling documented. A retry sequence that runs until something turns green is the
+   laundering move wearing a lab coat, and it is pre-committed against here so that the
+   commitment exists before the result does.
+
+**Consequence.** Every Phase 5 artifact carries an attempt number from here on, and the
+scorecard reports both attempts. The `subject_mention` bar for attempt #2 is registered in a
+commit of its own, ahead of the code that derives the new pairs, in the same shape as
+`3d8ba40`.

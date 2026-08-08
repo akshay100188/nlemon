@@ -125,25 +125,23 @@ def evaluate(model: GPT, xv: np.ndarray, yv: np.ndarray, batch: int,
 
 
 def require_mask_assertion(cfg: Config) -> None:
-    """Refuse to train until the mask has been asserted on real tensors.
+    """Re-run the mask assertion here, every time, before step 1.
 
-    `src.sft_data mask` writes its receipt; this reads it. A comment saying the
-    mask is correct is not evidence, and a loss curve cannot tell the difference.
+    The first version of this read a JSON receipt written by
+    `python -m src.sft_data mask`. That is a gate reading a summary, which this
+    project has already been burned by twice - `verify_docs` skipping real claims
+    while printing success (ADR-021), and a threshold trusted from a file instead
+    of recomputed (ADR-029). Edit `pack()` after running the CLI and a receipt
+    still says "passed".
+
+    So the assertion is recomputed on live tensors instead. It costs one pair.
     """
-    receipt = REPO_ROOT / cfg.results_dir / "sft_mask_assertion.json"
-    if not receipt.exists():
-        raise SystemExit(
-            "the loss mask has not been asserted. Run:\n"
-            "    python -m src.sft_data mask\n"
-            "A masking bug still trains to a plausible loss curve (ADR-014), so "
-            "this trainer will not start without the assertion on record.")
-    rec = json.loads(receipt.read_text(encoding="utf-8"))
-    if not rec.get("passed"):
-        raise SystemExit(f"mask assertion on record did not pass: {rec}")
-    if rec.get("context_len") != cfg.context_len:
-        raise SystemExit(
-            f"mask assertion was run at context_len {rec.get('context_len')}, "
-            f"config now says {cfg.context_len}. Re-run it.")
+    from src.sft_data import assert_mask
+
+    rec = assert_mask(cfg, verbose=False)
+    print(f"mask assertion recomputed: {rec['supervised_positions']} supervised "
+          f"positions == {rec['response_tokens']} response tokens, "
+          f"{rec['ignored_prompt_positions']} prompt positions ignored")
 
 
 def load_tensors(cfg: Config) -> tuple[np.ndarray, ...]:
