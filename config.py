@@ -114,6 +114,8 @@ STAGE_EXEMPT: dict[str, str] = {
     "sft_gate_temperature": "gate decoding, pinned separately from the global default",
     "sft_gate_top_k": "gate decoding, pinned separately",
     "sft_gate_new_tokens": "gate decoding, pinned separately",
+    "sft_gate_subject_mention_delta": "pre-registered gate delta",
+    "sft_gate_length_band_delta": "pre-registered gate delta",
     "sft_gate_subject_mention_min": "pre-registered gate threshold",
     "sft_gate_length_band_min": "pre-registered gate threshold",
     "sft_gate_is_story_min": "pre-registered gate threshold",
@@ -225,8 +227,13 @@ class Config:
     # decode defaults - see ADR-025.
     sft_gate_temperature: float = 0.8
     sft_gate_top_k: int = 40
-    sft_gate_new_tokens: int = 200
+    # 245 = context_len - longest held-out prompt, so the instruction stays in
+    # the attention window for the whole response (ADR-028).
+    sft_gate_new_tokens: int = 245
     # Pre-registered before src/sft.py existed - see ADR-027 and git history.
+    # The DELTA is the commitment; the bar is base + delta (ADR-028).
+    sft_gate_subject_mention_delta: float = 0.250
+    sft_gate_length_band_delta: float = 0.255
     sft_gate_subject_mention_min: float = 0.60
     sft_gate_length_band_min: float = 0.70
     sft_gate_is_story_min: float = 0.69

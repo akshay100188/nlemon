@@ -107,7 +107,21 @@ checker_max_repeat_run: 2         # the Phase 4 corpus p95
 # gate at settings it was never pre-registered against.
 sft_gate_temperature: 0.8
 sft_gate_top_k: 40
-sft_gate_new_tokens: 200
+# 245, not 200 (ADR-028). Two independent reasons, both measured:
+#   (a) generate() feeds out[-context_len:], so the instruction stays inside the
+#       attention window only while prompt + generated <= 256. The longest
+#       held-out prompt is 11 tokens, so 245 is the largest cap that keeps the
+#       subject visible for the whole response. Above it the model is being
+#       asked to keep writing about a thing it can no longer see, and
+#       subject_mention would decay for a reason that is not the fine-tune.
+#   (b) at 200 tokens the band's upper edge of 200 words was unreachable
+#       (200 tokens buys ~155 words), so length_band was silently one-sided and
+#       is_story had become a truncation detector: base fails it 66% of the time
+#       in its longest quartile versus 57% in its shortest, because long
+#       responses get cut off mid-sentence at the cap. SFT's job is to make
+#       responses longer, so the gate as first pinned would have punished the
+#       model for succeeding. See results/sft_budget_census.md.
+sft_gate_new_tokens: 245
 
 # --- PRE-REGISTERED Phase 5 gate thresholds ----------------------------------
 # Agreed and committed BEFORE src/sft.py existed and before any fine-tune ran.
@@ -115,13 +129,23 @@ sft_gate_new_tokens: 200
 # that adds the training code. Phase 4's bar was agreed minutes after the run
 # launched (ADR-017); this is the corrected version of that process.
 #
-# Anchored to the measured base floor on the same 200 held-out prompts, at the
-# same pinned decoding, scored by the same checker:
+# THE PRE-REGISTERED QUANTITY IS THE DELTA, not the absolute bar. The bar is
+# base + delta, computed mechanically, so re-measuring the floor with a corrected
+# instrument cannot loosen the commitment (ADR-028). Detection floor at n=200 is
+# ~9.3 points, so both deltas are ~2.7x noise.
+sft_gate_subject_mention_delta: 0.250
+sft_gate_length_band_delta: 0.255
+
+# Absolute bars = base + delta. Anchored to the measured base floor on the same
+# 200 held-out prompts, at the same pinned decoding, scored by the same checker.
 #     subject_mention 35.0%  (shuffled control 6.5%, ceiling 100.0%)
 #     length_band     44.5%  (ceiling 92.5%)
 #     is_story        69.0%  (floor only - near-saturated, no headroom)
 #     not_degenerate  74.5%  (floor only)
-# Detection floor at n=200 is ~9.3 points, so both deltas are ~2.7x noise.
+# ^ measured at sft_gate_new_tokens = 200. That cap was wrong (ADR-028), so these
+# four numbers are re-measured at 245 and the bars re-anchored in the next commit.
+# The floors move WITH the re-measured base: keeping is_story at 0.69 while
+# raising the cap would be the one change that genuinely made the gate easier.
 sft_gate_subject_mention_min: 0.60    # base 35.0% -> +25.0 pts, z = 5.2
 sft_gate_length_band_min: 0.70        # base 44.5% -> +25.5 pts, z = 5.1
 sft_gate_is_story_min: 0.69           # base floor: must not regress

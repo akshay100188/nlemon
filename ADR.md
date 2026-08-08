@@ -917,3 +917,87 @@ for the thing it was always going to do.
 **Consequence.** The gate can fail, and the shuffled control can invalidate a pass: if
 subject-mention rises while the shuffled rate rises with it, the model has learned to name
 more nouns rather than the right one, and the headline number stops meaning adherence.
+
+## ADR-028 — The token budget censors the training data, and the generation cap was set wrong
+
+**Status.** Accepted, Phase 5, before `src/sft.py` existed.
+
+**Context.** `context_len` is 256 tokens. Instruction pairs allow responses up to 220
+words, which at the measured 1.29 tokens/word does not fit. Pairs that overflow are
+dropped rather than truncated: cutting a story mid-sentence would teach the model to stop
+mid-sentence, which is the exact pathology SFT exists to remove.
+
+But the filter does not *thin* the length distribution, it **censors** it. Length is what
+breaks the budget, so the longest responses are removed preferentially and the right tail
+is cut off rather than sampled less often. If that cut landed below the upper edge of the
+pre-registered `length_band`, the training set could not contain examples reaching the top
+of the band, and the model could not produce what it was never shown. A bar the data is
+structurally incapable of teaching is not a bar the model can miss.
+
+The censoring point is not a fixed word count. Prompt length varies (10-11 tokens), so the
+headroom left for the response varies with it: the same response fits behind a short
+prompt and does not behind a long one. The check therefore has to be the **joint**
+distribution of response-words against tokens-consumed, not a single threshold.
+
+**Measurement.** `python -m src.sft_data census`, on the 40,000 pairs, encoded by the same
+code that builds the training tensors — so the census describes the data actually trained
+on rather than a second implementation of the filter free to disagree with the real one.
+
+Dropped 2,192 of 40,000 (5.5%), every one for the same reason. Survival is 100% up to 159
+words, 99.9% at 160-169, 98.6% at 170-179, 93.5% at 180-189, 73.2% at 190-199, and 0 above
+219. The registered band is 102-200; the surviving band (p5-p95) is 102-189, and 1,707
+surviving examples sit at 190+ words with the longest at 217. **The band is spanned.** The
+5.5% drop is not a structural force on the distribution inside the band, and the
+pre-registered length bar is reachable from the data.
+
+**But the same census exposed a worse problem in the gate's own decoding.** The gate
+generated at most 200 new tokens, which buys ~155 words. Two consequences, both measured
+on base:
+
+* The band's upper edge of 200 words was **unreachable**. All 111 of base's `length_band`
+  failures were too-short; zero were too-long. The band was silently one-sided, while
+  being described as a two-sided corpus band.
+* `is_story` had quietly become a **truncation detector**. It requires the response to end
+  on terminal punctuation, and a response cut off at the cap does not. Base fails
+  `is_story` in **66%** of its longest quartile versus **57%** of its shortest — the wrong
+  way round for a story-quality metric. 35 of 200 responses (17.5%) ended without terminal
+  punctuation.
+
+SFT's job on `length_band` is to make responses longer. Longer responses hit the cap.
+`is_story` is a floor that must not regress. **The two halves of the gate were in
+mechanical conflict, and the conflict was caused by the cap rather than by the model** — a
+regression would have read as "the model stopped producing stories" when it actually meant
+"the model wrote longer stories and got cut off."
+
+**Decision.** Raise `sft_gate_new_tokens` from 200 to **245**, and make the *delta* the
+pre-registered quantity rather than the absolute bar.
+
+245 is not a round number, it is the largest value that is safe. `generate()` feeds
+`out[-context_len:]`, so the instruction stays inside the attention window only while
+`prompt + generated <= 256`. The longest held-out prompt is 11 tokens. Above 245 the model
+is being asked to keep writing about a subject it can no longer see, and `subject_mention`
+would decay for a reason that has nothing to do with the fine-tune. At 245 the band's
+upper edge becomes reachable (201 words at the cheapest encoding) and the surviving
+training p95 of 189 words fits with 1 token to spare.
+
+**Why this is not moving the goalposts.** Raising the cap does make `is_story` easier in
+isolation — fewer truncations. So the floors are **re-measured on base at the new cap and
+re-anchored to what that measurement says.** The bar moves with the floor. Keeping
+`is_story` at 0.69 while raising the cap would have been the one change that genuinely made
+the gate easier. The two deltas (+25.0 and +25.5 points) do not move; they were agreed
+before any of this and they are now stored in the config as
+`sft_gate_*_delta`, with the absolute bars derived as `base + delta` so they cannot drift
+from the rule.
+
+**Consequence.** Two pre-flight validity checks now guard the Phase 5 gate, and they are
+the same pattern applied to different halves of it. In `src/checker.py`, **base's own
+score** says whether the checker is honest — a high base `subject_mention` would mean a
+broken checker, not a weak floor. In `src/sft_data.py`, **the surviving data distribution**
+says whether the bar is reachable. Neither is a check on the model; both are checks on the
+gate, and both have to pass before the fine-tune is a meaningful test rather than a rigged
+one.
+
+`coherence_new_tokens` stays at 200. Phase 4's artifacts were published at that value and
+retro-fitting a closed phase's decoding to make its numbers look better is the opposite of
+the discipline here. The Phase 5 gate reads its own `sft_gate_*` keys precisely so the two
+can differ without either being silently redefined (ADR-025).
