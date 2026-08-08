@@ -15,28 +15,38 @@
     }
   },
   "base": {
-    "responses": 200,
-    "words": 20173,
-    "oov_rate": 0.00609726,
+    "responses": 312,
+    "words": 30899,
+    "oov_rate": 0.00485453,
     "oov_rate_in_band": false,
-    "oov_plausibility": -2.665068,
-    "n_oov_tokens": 123,
-    "n_oov_distinct": 34,
+    "oov_plausibility": -2.695807,
+    "n_oov_tokens": 150,
+    "n_oov_distinct": 44,
     "oov_words": [
-      {
-        "word": "tellow",
-        "count": 24,
-        "char_logprob": -2.2815
-      },
       {
         "word": "mrite",
         "count": 21,
         "char_logprob": -3.4253
       },
       {
-        "word": "mada",
-        "count": 11,
-        "char_logprob": -2.6791
+        "word": "micrite",
+        "count": 17,
+        "char_logprob": -2.6388
+      },
+      {
+        "word": "arite",
+        "count": 12,
+        "char_logprob": -2.5416
+      },
+      {
+        "word": "muus",
+        "count": 10,
+        "char_logprob": -3.6341
+      },
+      {
+        "word": "tellow",
+        "count": 9,
+        "char_logprob": -2.2815
       },
       {
         "word": "telle",
@@ -44,24 +54,29 @@
         "char_logprob": -2.2265
       },
       {
-        "word": "arite",
-        "count": 7,
-        "char_logprob": -2.5416
-      },
-      {
-        "word": "muus",
+        "word": "erite",
         "count": 5,
-        "char_logprob": -3.6341
+        "char_logprob": -2.7656
       },
       {
-        "word": "briite",
+        "word": "trite",
         "count": 4,
-        "char_logprob": -3.2312
+        "char_logprob": -2.1656
       },
       {
-        "word": "micrite",
+        "word": "tell's",
         "count": 4,
-        "char_logprob": -2.6388
+        "char_logprob": -2.1738
+      },
+      {
+        "word": "ian",
+        "count": 4,
+        "char_logprob": -3.5451
+      },
+      {
+        "word": "writey",
+        "count": 4,
+        "char_logprob": -2.876
       },
       {
         "word": "tellers",
@@ -69,19 +84,24 @@
         "char_logprob": -2.1285
       },
       {
-        "word": "lell",
+        "word": "orite",
         "count": 3,
-        "char_logprob": -3.1482
+        "char_logprob": -2.6934
       },
       {
-        "word": "write's",
+        "word": "magine",
         "count": 3,
-        "char_logprob": -2.4105
+        "char_logprob": -1.994
       },
       {
-        "word": "micalia",
+        "word": "mici",
         "count": 3,
-        "char_logprob": -2.3519
+        "char_logprob": -2.384
+      },
+      {
+        "word": "brite",
+        "count": 3,
+        "char_logprob": -2.2209
       },
       {
         "word": "tellia",
@@ -89,135 +109,160 @@
         "char_logprob": -2.4435
       },
       {
-        "word": "thellow",
+        "word": "sandpite",
         "count": 2,
-        "char_logprob": -1.9428
+        "char_logprob": -2.3495
       },
       {
-        "word": "brite",
+        "word": "writea",
         "count": 2,
-        "char_logprob": -2.2209
-      },
-      {
-        "word": "tellell",
-        "count": 1,
-        "char_logprob": -2.6674
-      },
-      {
-        "word": "crite",
-        "count": 1,
-        "char_logprob": -2.2985
-      },
-      {
-        "word": "scretch",
-        "count": 1,
-        "char_logprob": -1.9934
-      },
-      {
-        "word": "aforse",
-        "count": 1,
-        "char_logprob": -2.4759
-      },
-      {
-        "word": "snowst",
-        "count": 1,
-        "char_logprob": -2.0286
-      },
-      {
-        "word": "'pleer",
-        "count": 1,
-        "char_logprob": -2.6733
-      },
-      {
-        "word": "pmnep",
-        "count": 1,
-        "char_logprob": -4.1275
-      },
-      {
-        "word": "inded",
-        "count": 1,
-        "char_logprob": -2.1816
-      },
-      {
-        "word": "telle's",
-        "count": 1,
-        "char_logprob": -2.0611
-      },
-      {
-        "word": "mrite's",
-        "count": 1,
-        "char_logprob": -3.1474
-      },
-      {
-        "word": "chrite",
-        "count": 1,
-        "char_logprob": -2.4635
-      },
-      {
-        "word": "glanes",
-        "count": 1,
-        "char_logprob": -2.307
-      },
-      {
-        "word": "drite",
-        "count": 1,
-        "char_logprob": -2.2928
-      },
-      {
-        "word": "tell's",
-        "count": 1,
-        "char_logprob": -2.1738
-      },
-      {
-        "word": "prite",
-        "count": 1,
-        "char_logprob": -2.0964
-      },
-      {
-        "word": "mical",
-        "count": 1,
-        "char_logprob": -2.1948
-      },
-      {
-        "word": "micr",
-        "count": 1,
-        "char_logprob": -2.8746
-      },
-      {
-        "word": "happointed",
-        "count": 1,
-        "char_logprob": -1.9782
+        "char_logprob": -2.5278
       },
       {
         "word": "budy",
-        "count": 1,
+        "count": 2,
         "char_logprob": -2.6684
+      },
+      {
+        "word": "mical",
+        "count": 2,
+        "char_logprob": -2.1948
+      },
+      {
+        "word": "nelle",
+        "count": 2,
+        "char_logprob": -2.2825
+      },
+      {
+        "word": "fellers",
+        "count": 2,
+        "char_logprob": -2.1073
+      },
+      {
+        "word": "erite's",
+        "count": 1,
+        "char_logprob": -2.6762
+      },
+      {
+        "word": "tal",
+        "count": 1,
+        "char_logprob": -2.3218
+      },
+      {
+        "word": "well's",
+        "count": 1,
+        "char_logprob": -2.0376
+      },
+      {
+        "word": "grite",
+        "count": 1,
+        "char_logprob": -2.3074
+      },
+      {
+        "word": "polk",
+        "count": 1,
+        "char_logprob": -2.7218
+      },
+      {
+        "word": "nightstite",
+        "count": 1,
+        "char_logprob": -2.2512
+      },
+      {
+        "word": "worming",
+        "count": 1,
+        "char_logprob": -1.6615
+      },
+      {
+        "word": "sunie",
+        "count": 1,
+        "char_logprob": -2.1601
+      },
+      {
+        "word": "micicrite",
+        "count": 1,
+        "char_logprob": -2.7444
+      },
+      {
+        "word": "arees",
+        "count": 1,
+        "char_logprob": -2.6385
+      },
+      {
+        "word": "ups's",
+        "count": 1,
+        "char_logprob": -2.4134
+      },
+      {
+        "word": "brite's",
+        "count": 1,
+        "char_logprob": -2.2871
+      },
+      {
+        "word": "deww",
+        "count": 1,
+        "char_logprob": -3.1036
+      },
+      {
+        "word": "write's",
+        "count": 1,
+        "char_logprob": -2.4105
+      },
+      {
+        "word": "writeing",
+        "count": 1,
+        "char_logprob": -2.448
+      },
+      {
+        "word": "milor",
+        "count": 1,
+        "char_logprob": -2.4978
+      },
+      {
+        "word": "him's",
+        "count": 1,
+        "char_logprob": -2.5916
+      },
+      {
+        "word": "lell",
+        "count": 1,
+        "char_logprob": -3.1482
+      },
+      {
+        "word": "lellia",
+        "count": 1,
+        "char_logprob": -2.9409
+      },
+      {
+        "word": "lellell",
+        "count": 1,
+        "char_logprob": -3.0938
+      },
+      {
+        "word": "lomom",
+        "count": 1,
+        "char_logprob": -3.3031
       }
     ]
   },
   "sft": {
-    "responses": 200,
-    "words": 28418,
-    "oov_rate": 0.00010557,
+    "responses": 312,
+    "words": 45031,
+    "oov_rate": 4.441e-05,
     "oov_rate_in_band": true,
-    "oov_plausibility": -3.079226,
-    "n_oov_tokens": 3,
-    "n_oov_distinct": 3,
+    "oov_plausibility": -2.704404,
+    "n_oov_tokens": 2,
+    "n_oov_distinct": 2,
     "oov_words": [
       {
-        "word": "sosophie",
+        "word": "lamp's",
         "count": 1,
-        "char_logprob": -3.6379
+        "char_logprob": -2.3867
       },
       {
-        "word": "intooh",
+        "word": "eld",
         "count": 1,
-        "char_logprob": -2.9314
-      },
-      {
-        "word": "budy",
-        "count": 1,
-        "char_logprob": -2.6684
+        "char_logprob": -3.0221
       }
     ]
   }

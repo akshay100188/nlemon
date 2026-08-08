@@ -1,6 +1,10 @@
 {
-  "green": false,
-  "deltas_pass": false,
+  "attempt": 2,
+  "verdict": "GREEN",
+  "deltas_state": "GREEN",
+  "floors_state": "GREEN",
+  "green": true,
+  "deltas_pass": true,
   "floors_pass": true,
   "validity_ok": true,
   "decoding": {
@@ -8,60 +12,80 @@
     "top_k": 40,
     "new_tokens": 245
   },
-  "n": 200,
+  "n": 312,
   "length_band": [
-    102,
-    200
+    103,
+    190
   ],
   "scores": {
     "subject_mention": {
-      "base": 0.35,
-      "sft": 0.5,
-      "delta": 0.15,
-      "bar": 0.6,
-      "pass": false,
+      "base": 0.477564,
+      "sft": 0.708333,
+      "delta": 0.230769,
+      "bar": 0.652564,
+      "amber_floor": 0.564963,
+      "state": "GREEN",
+      "pass": true,
       "kind": "delta",
-      "rule": "base 35.0% + delta 25.0%"
+      "rule": "base 47.8% + delta 17.5%",
+      "n_eff": 249.8,
+      "icc": 0.083,
+      "detection_floor": 0.087601
     },
     "length_band": {
-      "base": 0.435,
-      "sft": 0.955,
-      "delta": 0.52,
-      "bar": 0.69,
+      "base": 0.378205,
+      "sft": 0.929487,
+      "delta": 0.551282,
+      "bar": 0.678205,
+      "amber_floor": 0.598624,
+      "state": "GREEN",
       "pass": true,
       "kind": "delta",
-      "rule": "base 43.5% + delta 25.5%"
+      "rule": "base 37.8% + delta 30.0%",
+      "n_eff": 285.3,
+      "icc": 0.0312,
+      "detection_floor": 0.079581
     },
     "is_story": {
-      "base": 0.77,
-      "sft": 0.985,
-      "delta": 0.215,
-      "bar": 0.700773,
+      "base": 0.759615,
+      "sft": 0.980769,
+      "delta": 0.221154,
+      "bar": 0.699272,
+      "amber_floor": 0.627374,
+      "state": "GREEN",
       "pass": true,
       "kind": "floor",
-      "rule": "base 77.0% - 1.645 x SE 4.208% = -6.9%"
+      "rule": "base 76.0% - 1.645 x SE 3.668% = -6.0%",
+      "n_eff": 271.4,
+      "icc": 0.0498,
+      "detection_floor": 0.071898
     },
     "not_degenerate": {
-      "base": 0.735,
-      "sft": 0.855,
-      "delta": 0.12,
-      "bar": 0.662401,
+      "base": 0.708333,
+      "sft": 0.900641,
+      "delta": 0.192308,
+      "bar": 0.645287,
+      "amber_floor": 0.570168,
+      "state": "GREEN",
       "pass": true,
       "kind": "floor",
-      "rule": "base 73.5% - 1.645 x SE 4.413% = -7.3%"
+      "rule": "base 70.8% - 1.645 x SE 3.833% = -6.3%",
+      "n_eff": 281.3,
+      "icc": 0.0364,
+      "detection_floor": 0.075119
     }
   },
   "shuffled": {
-    "base": 0.07,
-    "sft": 0.085,
-    "max": 0.1,
-    "above_chance_base": 0.28,
-    "above_chance_sft": 0.415
+    "base": 0.00641,
+    "sft": 0.019231,
+    "max": 0.06,
+    "above_chance_base": 0.471154,
+    "above_chance_sft": 0.689102
   },
   "mean_words": {
-    "base": 100.86,
-    "sft": 142.09
+    "base": 99.04,
+    "sft": 144.33
   },
-  "config_hash": "37a936623d50",
-  "sft_stage_hash": "0c4289f96c04"
+  "config_hash": "fbc725d5e63b",
+  "sft_stage_hash": "ecad1e4b412d"
 }

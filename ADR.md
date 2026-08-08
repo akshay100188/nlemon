@@ -1364,3 +1364,122 @@ to 8.8.
 
 A gate is only as sharp as the number of independent observations behind it, and "how many
 prompts did you run" is not that number.
+
+## ADR-034 — Verify a correction reached the *registration*, not only the recount
+
+**Status.** Accepted, Phase 5 attempt #2, before the attempt #2 verdict was read.
+
+**Context.** Two of the three defects found while building attempt #2 were corrections to a
+*measurement*. Both raised the same follow-up question, and it is not the same question as
+"was the correction right":
+
+> When you fix how something is measured, did the fix reach the **pre-registered bar**, or
+> only the **retrospective analysis**?
+
+A correction that lands in the recount and not the registration leaves the verdict zones
+calibrated to the number you no longer believe. The result then gets scored against a stale
+bar while the write-up quotes the corrected figure, and the two disagree silently. This is
+cheap to check and it has now come up twice in one phase, so it is written down as a
+standing step rather than a thing to remember.
+
+**The two checks, and how they were answered.**
+
+*Did attempt #2's `subject_mention` bar come from attempt #2's own floor?* Answered by
+deriving the floor a **second, independent way** rather than re-reading the first. A cluster
+bootstrap over subjects — 4,000 resamples of whole subjects, making no ANOVA or normality
+assumption — gives 8.8 points against the design-effect method's 8.8, agreeing to 0.04. The
+registered +17.5 is 2.00x and 1.99x against the two. And the inheritance test is arithmetic:
+carrying "same shape as +25" would have registered a 72.8% bar, carrying attempt #1's
+claimed 2.7x multiple would have registered 71.4%, and the actual registered bar is 65.3%.
+It could not have inherited from either. **Clean.**
+
+*Did `length_band`'s upper edge come from what the generator can emit?* Partly, and the
+honest answer is that the right ceiling was reached by the wrong route. The band was derived
+from the **training filter** (`prompt + response <= 257`, so response `<= 246` tokens), not
+from the **generation cap** (response `<= 245`). Those are different constraints. They differ
+by one token here, and not coincidentally: ADR-028 set the cap to `context_len - max_prompt`
+and the training budget is `context_len + 1 - max_prompt`, so the two are structurally
+coupled one token apart. A cap set *below* `context_len - max_prompt` would break that
+coupling and the band would then need deriving generation-side. **Right answer, route not
+verified in advance** — recorded so the coupling is a stated assumption rather than a
+coincidence nobody noticed.
+
+**A second lesson, on trusting a ratio over a measurement.** The tokens-per-word arithmetic
+predicted that 190 words needs ~245 tokens at the median encoding and would therefore be
+barely emittable, making the band's upper edge nearly inert. That prediction was wrong.
+Base emitted **18 responses over 190 words out of 312**, with a p95 of 193 and a maximum of
+217 — the edge binds. Generated text at that length encodes more cheaply than the
+corpus-wide median tokens-per-word implies, so a corpus-average ratio is the wrong instrument
+for a question about the tail. The empirical count overrides the ratio, and the ratio should
+not have been reported as a finding before the count was available.
+
+**Consequence.** Every future gate adds one step between "measurement corrected" and "run
+launched": re-derive the bar from the corrected measurement and check it against the frozen
+value, by a method that does not share an input with the original derivation. `derive_bars`
+already asserts the frozen bars match the rule; what this adds is that the *rule's inputs*
+get recomputed from the current data, and that at least one number in the chain is derived
+twice by genuinely independent means (ADR-013's rule, applied to thresholds rather than to
+parameter counts).
+
+
+## ADR-035 — The amber band was registered on one side of the bar only
+
+**Status.** Accepted, Phase 5 attempt #2, recorded with the verdict rather than after it.
+
+**Context.** Attempt #2 came back GREEN on all four sub-scores. Three of them cleared their
+bars by 25 points or more. `subject_mention` cleared by **5.6**, against a detection floor of
+**8.8**.
+
+The amber band registered before the run covers `bar - 1.96*SE <= sft < bar`: a *miss* too
+small for the eval to resolve. There is an obvious symmetric case — a *pass* too small for
+the eval to resolve — and it was not registered. The Product Owner named this failure mode
+in advance, in the same message that asked whether the corrections had propagated into the
+bars: *"a GREEN could be a floor-grazing result wearing a passing label."* The propagation
+checks came back clean and the zones were confirmed sound, and then the result landed in the
+un-registered zone anyway.
+
+**Measurement.** Two questions, deliberately separated, because they have different answers:
+
+*Is the delta real?* `subject_mention` moved 47.8% to 70.8%, **+23.1 points, 2.6x the 8.8
+point floor**. Decisive. The claim "the aboutness fix taught subject adherence" is solid.
+
+*Is the margin over the bar real?* 70.8% against a 65.3% bar is **+5.6 points, inside the
+same floor**. A one-sided test gives z = 1.74, p = 0.041 — significant at 95%, barely. A
+cluster bootstrap over subjects puts **3.5% of resamples below the bar** and its 2.5th
+percentile at **64.4%, which is below the bar itself**. Not decisive.
+
+A further wrinkle, and it cuts the same way. The bars were priced on **base's** clustering,
+which is the correct pre-registration choice — base is measurable before the run, sft is not,
+and pricing a bar on the result's own variance would make the threshold depend on the
+outcome. But sft's clustering is worse: ICC 0.182 against base's 0.083, so sft's effective n
+is 202 rather than 250 and its true floor is nearer 9.8 points. The margin sits further
+inside the noise than the registered floor suggests, not less far.
+
+The other three are decisive by any reading: `length_band` +25.1 over its bar (z = 16.7),
+`is_story` +28.1 (z = 36.2), `not_degenerate` +25.5 (z = 15.1), with 0.0% of bootstrap
+resamples below the bar in each case.
+
+**Decision.** Report the verdict as **GREEN, with `subject_mention` flagged as a grazing
+pass** — and do not quietly upgrade it in the write-up. The pre-registered rule says GREEN
+and the rule stands; changing it now, after seeing where the number fell, would be the
+mirror image of the laundering this phase has twice refused. What is owed is the caveat, in
+the same place as the headline: *the delta is decisive, the margin over the bar is not, and a
+rerun on a different seed could plausibly land in AMBER.*
+
+**Consequence.** The amber band becomes two-sided for every future gate:
+
+    GREEN    sft >= bar + z*SE     cleared by more than the eval can resolve
+    AMBER+   bar <= sft < bar + z*SE     cleared, but inside the noise
+    AMBER-   bar - z*SE <= sft < bar     missed, but inside the noise
+    RED      sft < bar - z*SE
+
+A one-sided amber encodes an assumption nobody stated: that only a near-miss is ambiguous,
+while a near-hit is a clean pass. Both are the same distance from the same threshold and both
+deserve the same label. Registering only the lower half meant the gate could produce an
+unqualified GREEN from a result it could not distinguish from a failure — which is precisely
+the property the amber band was invented to remove.
+
+Note what this does **not** change about attempt #2: three sub-scores clear decisively, the
+shuffled control held (0.6% to 1.9% against a 6.0% limit, while matched rose 23.1 points),
+and the `subject_mention` *delta* is 2.6x noise. The finding is about how confidently one
+number may be quoted, not about whether the fine-tune worked.

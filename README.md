@@ -22,12 +22,37 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 | 2 | Tokenizer (8k BPE) | ✅ done |
 | 3 | Architecture | ✅ done |
 | 4 | Pretraining | ✅ done |
-| 5 | SFT | ⬜ not started |
+| 5 | SFT | 🟥 attempt #1 **RED** → 🟩 attempt #2 **green** ([why](results/sft_gate.md)) |
 | 6 | DPO | ⬜ not started |
 | 7 | Eval harness | ⬜ not started |
 | 8 | Public artifact | ⬜ not started |
 
 No phase starts until the previous phase's gate is green.
+
+**Phase 5 failed first, and that result stands.** Attempt #1 came back RED —
+`subject_mention` reached 50.0% against a pre-registered 60.0%. The diagnosis was that
+47.8% of the training pairs mentioned their subject at most once, because the miner
+required the subject to *appear* in a document and appearing is not being about it
+([ADR-030](ADR.md)). Attempt #2 re-derived the pool by corpus aboutness and re-registered
+every bar from a freshly measured base floor ([ADR-032](ADR.md)). It is a second attempt
+**beside** the first, not a replacement for it, and both are reported:
+
+| | attempt #1 | attempt #2 |
+|---|---|---|
+| `subject_mention` | 35.0% → **50.0%** vs bar 60.0% — **RED** | 47.8% → **70.8%** vs bar 65.3% — green* |
+| `length_band` | 43.5% → 95.5% vs bar 69.0% — pass | 37.8% → **92.9%** vs bar 67.8% — pass |
+| `is_story` (floor) | 77.0% → 98.5% | 76.0% → **98.1%** |
+| `not_degenerate` (floor) | 73.5% → 85.5% | 70.8% → **90.1%** |
+| shuffled control | 7.0% → 8.5% (≤10%) | 0.6% → **1.9%** (≤6%) |
+| pairs teaching subject ≤1× | 47.8% | **0.2%** |
+| effective n | ~106 of 200 prompts | **~250** of 312 |
+
+\* **A grazing green.** `subject_mention` cleared its bar by 5.6 points against an
+8.8-point detection floor (one-sided p = 0.041; a cluster bootstrap puts 3.5% of resamples
+below the bar). The *delta* of +23.1 points is decisive at 2.6× the floor — the fine-tune
+demonstrably taught subject adherence — but the *margin over the bar* is not, and a rerun on
+another seed could land in amber. The amber band had been registered below the bar and not
+above it; [ADR-035](ADR.md) makes it two-sided.
 
 ---
 
