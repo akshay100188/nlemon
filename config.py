@@ -118,6 +118,8 @@ STAGE_EXEMPT: dict[str, str] = {
     # sft.py landed; only the ones that touch no weight stay exempt.
     "sft_attempt": "bookkeeping: which Phase 5 attempt an artifact belongs to",
     "sft_eval_prompts": "gate evaluation set size; no weight depends on it",
+    "sft_heldout_per_subject": "gate evaluation set shape; no weight depends on it",
+    "sft_heldout_scan_docs": "gate evaluation set construction; no weight depends on it",
     "sft_eval_interval": "bookkeeping: how often SFT validation runs",
     "checker_min_sentences": "gate threshold",
     "checker_min_story_words": "gate threshold",
@@ -236,6 +238,10 @@ class Config:
     sft_heldout_subject_frac: float = 0.2
     sft_max_pairs: int = 40_000
     sft_eval_prompts: int = 200
+    # Balanced held-out sampling (ADR-033): more SUBJECTS raises the
+    # effective sample size; fewer prompts per subject lowers it.
+    sft_heldout_per_subject: int = 4
+    sft_heldout_scan_docs: int = 1_200_000
     sft_min_response_words: int = 60
     sft_max_response_words: int = 220
     # SFT training. lr is 6x below pretrain: the base already speaks, and the job

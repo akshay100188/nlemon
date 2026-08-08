@@ -2,51 +2,51 @@
 
 `context_len` is 256, so the longest training sequence is 257 tokens (`context_len + 1` gives `context_len` next-token predictions). Pairs longer than that are **dropped, not truncated**: cutting a story mid-sentence would teach the model to stop mid-sentence, which is the pathology SFT exists to remove.
 
-**Dropped 2,192 of 40,000 pairs (5.5%)**, every one for the same reason - sequence longer than context_len+1 = 257 tokens (prompt + response + <|endoftext|>).
+**Dropped 2,454 of 40,000 pairs (6.1%)**, every one for the same reason - sequence longer than context_len+1 = 257 tokens (prompt + response + <|endoftext|>).
 
 ## Why this is a gate and not a footnote
 
 The filter does not thin the length distribution, it **censors** it. Length is what breaks the budget, so the longest responses are removed preferentially and the right tail is cut off rather than sampled less often. If that cut lands below the upper edge of the pre-registered `length_band`, the training set cannot contain examples reaching the top of the band, and the model cannot produce what it was never shown. Scoring under such a bar would be a fact about the bar, not about the fine-tune.
 
-The censoring point is **not a fixed word count**. Prompt length varies (10-11 tokens, median 10), so the headroom left for the response varies with it: the same response fits behind a short prompt and does not behind a long one. Hence the joint table rather than a single threshold.
+The censoring point is **not a fixed word count**. Prompt length varies (9-11 tokens, median 10), so the headroom left for the response varies with it: the same response fits behind a short prompt and does not behind a long one. Hence the joint table rather than a single threshold.
 
-Encoding cost is 1.292 tokens per word at the median (p5 1.2185, p95 1.4384).
+Encoding cost is 1.2908 tokens per word at the median (p5 1.2176, p95 1.4344).
 
 ## Joint distribution
 
 | response words | pairs | fit | survival | total tokens min/median/max |
 |---|---|---|---|---|
-| 60-69 | 72 | 72 | 100.0% | 80 / 88 / 99 |
-| 70-79 | 218 | 218 | 100.0% | 91 / 100 / 125 |
-| 80-89 | 455 | 455 | 100.0% | 100 / 112 / 142 |
-| 90-99 | 887 | 887 | 100.0% | 111 / 126 / 171 |
-| 100-109 | 1,698 | 1,698 | 100.0% | 121 / 139 / 185 |
-| 110-119 | 3,046 | 3,046 | 100.0% | 133 / 152 / 199 |
-| 120-129 | 4,406 | 4,406 | 100.0% | 142 / 163 / 217 |
-| 130-139 | 5,392 | 5,392 | 100.0% | 156 / 175 / 228 |
-| 140-149 | 5,579 | 5,579 | 100.0% | 163 / 186 / 247 |
-| 150-159 | 4,977 | 4,977 | 100.0% | 174 / 198 / 253 |
-| 160-169 | 4,131 | 4,126 | 99.9% **&larr; the wall** | 189 / 211 / 273 |
-| 170-179 | 3,169 | 3,125 | 98.6% **&larr; the wall** | 200 / 222 / 301 |
-| 180-189 | 2,268 | 2,120 | 93.5% **&larr; the wall** | 213 / 235 / 313 |
-| 190-199 | 1,604 | 1,175 | 73.2% **&larr; the wall** | 224 / 248 / 311 |
-| 200-209 | 1,163 | 478 | 41.1% **&larr; the wall** | 237 / 261 / 358 |
-| 210-219 | 853 | 54 | 6.3% **&larr; the wall** | 246 / 276 / 336 |
-| 220-229 | 82 | 0 | 0.0% *censored* | 260 / 280 / 327 |
+| 60-69 | 75 | 75 | 100.0% | 80 / 89 / 100 |
+| 70-79 | 185 | 185 | 100.0% | 91 / 100 / 126 |
+| 80-89 | 407 | 407 | 100.0% | 100 / 113 / 148 |
+| 90-99 | 844 | 844 | 100.0% | 111 / 126 / 171 |
+| 100-109 | 1,575 | 1,575 | 100.0% | 121 / 139 / 184 |
+| 110-119 | 2,818 | 2,818 | 100.0% | 131 / 151 / 196 |
+| 120-129 | 4,174 | 4,174 | 100.0% | 142 / 163 / 219 |
+| 130-139 | 5,166 | 5,166 | 100.0% | 156 / 175 / 223 |
+| 140-149 | 5,477 | 5,477 | 100.0% | 166 / 186 / 247 |
+| 150-159 | 5,058 | 5,058 | 100.0% | 174 / 198 / 250 |
+| 160-169 | 4,251 | 4,247 | 99.9% **&larr; the wall** | 189 / 211 / 273 |
+| 170-179 | 3,339 | 3,296 | 98.7% **&larr; the wall** | 200 / 222 / 302 |
+| 180-189 | 2,442 | 2,271 | 93.0% **&larr; the wall** | 212 / 235 / 313 |
+| 190-199 | 1,805 | 1,328 | 73.6% **&larr; the wall** | 222 / 248 / 310 |
+| 200-209 | 1,296 | 549 | 42.4% **&larr; the wall** | 235 / 261 / 358 |
+| 210-219 | 1,001 | 76 | 7.6% **&larr; the wall** | 246 / 275 / 336 |
+| 220-229 | 87 | 0 | 0.0% *censored* | 261 / 282 / 327 |
 
 ## Where the wall falls
 
-- last bin fully surviving: **159 words**
+- last bin fully surviving: **169 words**
 - last bin at least half surviving: **199 words**
-- longest response that fits at all: **217 words**
+- longest response that fits at all: **218 words**
 
 ## Verdict against the pre-registered band
 
-Registered band: **102-200 words** (p5/p95 of the pairs before filtering - the band `sft_gate_length_band_min` was anchored to).
+Registered band: **103-202 words** (p5/p95 of the pairs before filtering - the band `sft_gate_length_band_min` was anchored to).
 
-Surviving band: **102-189 words**.
+Surviving band: **103-190 words**.
 
-Survival inside the band's top quintile (180-200 words): **84.1%**
+Survival inside the band's top quintile (182-202 words): **74.8%**
 
 **Spans the band.** The surviving data reaches the registered upper edge, so the pre-registered length bar is reachable and stands unchanged.
 

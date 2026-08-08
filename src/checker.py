@@ -140,6 +140,26 @@ def aggregate(rows: list[dict]) -> dict:
 
 
 def load_band(cfg: Config) -> tuple[int, int]:
+    """The band comes from the pairs that SURVIVE the token budget.
+
+    Attempt #1 took p5/p95 of the pairs as built, before the 256-token filter
+    removed the long tail. That over-states the top of the band: the filter
+    censors above ~190 words (ADR-028), so the raw p95 describes lengths the
+    training set no longer contains and the model was never shown. On attempt
+    #2's pairs the raw band is 103-202 and the surviving band is 103-190 - and
+    202 words cannot even be emitted inside the 245-token generation cap, so the
+    raw upper edge would have been inert by construction, which is exactly the
+    defect ADR-028 was written about.
+
+    So: the census's surviving band wins when it exists. It is the band the model
+    was taught and the band it can physically produce.
+    """
+    census = REPO_ROOT / cfg.results_dir / "sft_budget_census.json"
+    if census.exists():
+        c = json.loads(census.read_text(encoding="utf-8"))
+        sw = c.get("surviving_words")
+        if sw:
+            return int(sw["p5"]), int(sw["p95"])
     path = REPO_ROOT / cfg.results_dir / "sft_pairs_summary.json"
     if not path.exists():
         raise SystemExit("run `python -m src.instruct pairs` first.")

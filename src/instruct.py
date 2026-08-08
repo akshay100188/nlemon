@@ -153,13 +153,50 @@ def split_subjects(cfg: Config, counts: Counter) -> dict:
     }
 
 
-def subject_phrase(word: str) -> str:
-    """'kitten' -> 'a kitten'; keeps prompts grammatical without a lexicon."""
+def singular_of(word: str) -> str | None:
+    """The singular a plural would have come from, or None if it is not one."""
+    if word.endswith("ies") and len(word) > 4:
+        return word[:-3] + "y"
+    if word.endswith("es") and len(word) > 3:
+        return word[:-2]
+    if word.endswith("s") and not word.endswith("ss") and len(word) > 3:
+        return word[:-1]
+    return None
+
+
+def plural_subjects(counts: Counter) -> set[str]:
+    """Which pool words are plurals, decided by the corpus rather than by rules.
+
+    A word is treated as plural when its singular form is itself common in the
+    corpus. `animals` qualifies because `animal` is everywhere; `grass` does not,
+    because `gras` is not a word the corpus knows. No lexicon, no `-s` heuristic
+    that trips over `bus` and `dress`, and the evidence is countable.
+    """
+    out = set()
+    for w in counts:
+        sing = singular_of(w)
+        if sing and counts.get(sing, 0) >= 20:
+            out.add(w)
+    return out
+
+
+def subject_phrase(word: str, plurals: frozenset[str] = frozenset()) -> str:
+    """'kitten' -> 'a kitten', 'animals' -> 'animals'.
+
+    Plurals take no article. Without this the template emits "Write a story about
+    an animals.", which is not English, and a model asked an ungrammatical
+    question has been handed a harder task than the one being measured. Attempt #1
+    shipped seven of these (`animals`, `leaves`, `carrots`, `toys`, `clothes`,
+    `boxes`, `seeds`) and they sat in both the training pairs and the eval.
+    """
+    if word in plurals:
+        return word
     return ("an " if word[0] in "aeiou" else "a ") + word
 
 
 def build_pairs(cfg: Config, subjects: set[str], limit: int,
-                split_name: str) -> list[dict]:
+                split_name: str,
+                plurals: frozenset[str] = frozenset()) -> list[dict]:
     """Pair each document with one subject it is actually about.
 
     The subject must appear in the document, so the response genuinely answers
@@ -202,7 +239,7 @@ def build_pairs(cfg: Config, subjects: set[str], limit: int,
         template = TEMPLATES[rng.randrange(len(TEMPLATES))]
         pairs.append({
             "subject": best,
-            "prompt": template.format(subject=subject_phrase(best)),
+            "prompt": template.format(subject=subject_phrase(best, plurals)),
             "response": doc,
             "response_words": len(words),
             "subject_occurrences": freq[best],
@@ -213,6 +250,78 @@ def build_pairs(cfg: Config, subjects: set[str], limit: int,
         print(f"    dropped {dropped_unabout:,} docs whose best candidate appeared "
               f"< {cfg.sft_min_aboutness}x (passing mention, not a subject)")
     return pairs
+
+
+def build_heldout_balanced(cfg: Config, subjects: set[str],
+                           plurals: frozenset[str] = frozenset()
+                           ) -> tuple[list[dict], dict]:
+    """Held-out prompts spread evenly over subjects, not taken first-come.
+
+    Attempt #1 built this set by scanning until it had 200 pairs, which takes the
+    *first* 200 matching documents and therefore over-samples whichever subjects
+    are common. The result was 200 prompts over 50 subjects with one subject
+    carrying 34 of them - 17% of the eval riding on a single word.
+
+    That is not cosmetic. Outcomes cluster hard within subject: the measured ICC
+    on attempt #1's `subject_mention` is 0.33, so 200 clustered prompts were worth
+    about 106 independent ones and the real detection floor was 12.9 points rather
+    than the 9.3 that was reported. Spreading the same budget over every reachable
+    subject raises the effective sample size instead of the nominal one.
+
+    Capping prompts-per-subject was considered and rejected by measurement, not
+    taste: it loses more to a smaller `n` than it recovers from lower clustering
+    (cap-3 gives n_eff 84, worse than the 106 it was meant to fix). More subjects
+    is the lever; fewer prompts each is not.
+    """
+    rng = random.Random(cfg.seed + 1)
+    buckets: dict[str, list[dict]] = {s: [] for s in subjects}
+    need = cfg.sft_heldout_per_subject
+    for doc in iter_docs(text_path(cfg, "train"), cfg.doc_separator,
+                         limit=cfg.sft_heldout_scan_docs):
+        low = doc.lower()
+        freq = Counter(WORD.findall(low))
+        best, best_key = None, None
+        for m in DETERMINER.finditer(low):
+            w = m.group(1)
+            if w not in subjects:
+                continue
+            key = (freq[w], -m.start())
+            if best_key is None or key > best_key:
+                best, best_key = w, key
+        if best is None or freq[best] < cfg.sft_min_aboutness:
+            continue
+        if len(buckets[best]) >= need:
+            continue
+        words = doc.split()
+        if not (cfg.sft_min_response_words <= len(words) <= cfg.sft_max_response_words):
+            continue
+        buckets[best].append({"subject": best, "response": doc,
+                              "response_words": len(words),
+                              "subject_occurrences": freq[best]})
+        if all(len(v) >= need for v in buckets.values()):
+            break
+
+    pairs: list[dict] = []
+    for s in sorted(buckets):
+        for p in buckets[s]:
+            template = TEMPLATES[rng.randrange(len(TEMPLATES))]
+            pairs.append({**p,
+                          "prompt": template.format(
+                              subject=subject_phrase(s, plurals))})
+
+    sizes = {s: len(v) for s, v in buckets.items()}
+    covered = {s: n for s, n in sizes.items() if n}
+    coverage = {
+        "target_per_subject": need,
+        "subjects_requested": len(subjects),
+        "subjects_covered": len(covered),
+        "subjects_missing": sorted(s for s, n in sizes.items() if n == 0),
+        "subjects_short": sorted(s for s, n in covered.items() if n < need),
+        "prompts": len(pairs),
+        "largest_cluster_share": round(max(covered.values()) / max(len(pairs), 1), 4)
+        if covered else 0.0,
+    }
+    return pairs, coverage
 
 
 def format_example(cfg: Config, prompt: str, response: str) -> str:
@@ -288,6 +397,7 @@ def cmd_subjects(cfg: Config) -> None:
         "n_dropped_not_about": len(drop_about),
         "n_dropped_too_scarce": len(drop_thin),
         "pool_size": len(kept),
+        "plural_subjects": sorted(plural_subjects(counts) & set(kept)),
         "n_train": len(train), "n_heldout": len(held),
         "overlap": len(set(train) & set(held)),
         "train_subjects": train, "heldout_subjects": held,
@@ -307,16 +417,26 @@ def cmd_pairs(cfg: Config) -> None:
     if not path.exists():
         raise SystemExit("run `python -m src.instruct subjects` first.")
     split = json.loads(path.read_text(encoding="utf-8"))
+    plurals = frozenset(split.get("plural_subjects", ()))
     train_subjects = set(split["train_subjects"])
     held_subjects = set(split["heldout_subjects"])
 
     print(f"building train pairs (subjects: {len(train_subjects)})...")
-    train_pairs = build_pairs(cfg, train_subjects, cfg.sft_max_pairs, "train")
+    train_pairs = build_pairs(cfg, train_subjects, cfg.sft_max_pairs,
+                              "train", plurals)
     print(f"  {len(train_pairs):,} pairs")
 
-    print(f"building held-out prompts (subjects: {len(held_subjects)}, disjoint)...")
-    held_pairs = build_pairs(cfg, held_subjects, cfg.sft_eval_prompts, "heldout")
-    print(f"  {len(held_pairs):,} prompts")
+    print(f"building held-out prompts (subjects: {len(held_subjects)}, disjoint, "
+          f"balanced at {cfg.sft_heldout_per_subject}/subject)...")
+    held_pairs, coverage = build_heldout_balanced(cfg, held_subjects, plurals)
+    print(f"  {len(held_pairs):,} prompts over {coverage['subjects_covered']} "
+          f"subjects; largest carries {coverage['largest_cluster_share']:.1%}")
+    if coverage["subjects_missing"]:
+        print(f"  no usable document found for {len(coverage['subjects_missing'])}: "
+              f"{', '.join(coverage['subjects_missing'][:12])}")
+    if coverage["subjects_short"]:
+        print(f"  {len(coverage['subjects_short'])} subjects under target: "
+              f"{', '.join(coverage['subjects_short'][:12])}")
 
     used_train = {p["subject"] for p in train_pairs}
     used_held = {p["subject"] for p in held_pairs}
@@ -336,6 +456,7 @@ def cmd_pairs(cfg: Config) -> None:
     write_json(REPO_ROOT / cfg.results_dir / "sft_pairs_summary.json", {
         "train_pairs": len(train_pairs),
         "heldout_prompts": len(held_pairs),
+        "heldout_coverage": coverage,
         "distinct_train_subjects": len(used_train),
         "distinct_heldout_subjects": len(used_held),
         "subject_overlap": len(leak),

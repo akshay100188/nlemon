@@ -99,6 +99,13 @@ sft_attempt: 2                # Phase 5 attempt; #1 REDed and stands (ADR-032)
 sft_heldout_subject_frac: 0.2
 sft_max_pairs: 40000
 sft_eval_prompts: 200
+# The held-out set is sampled BALANCED across subjects, not first-come.
+# Attempt #1 scanned until it had 200 pairs, which over-sampled common
+# subjects: 200 prompts over 50 subjects, one carrying 34 of them. Measured
+# ICC on subject_mention is 0.33, so those 200 were worth ~106 independent
+# observations and the real detection floor was 12.9 pts, not 9.3 (ADR-033).
+sft_heldout_per_subject: 4
+sft_heldout_scan_docs: 1200000
 sft_min_response_words: 60      # keep pairs whose response is a real story
 sft_max_response_words: 220
 # Note: 220 words does not fit in a 256-token window. Pairs that overflow are

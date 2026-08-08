@@ -1,11 +1,20 @@
 {
   "train_pairs": 40000,
-  "heldout_prompts": 200,
-  "distinct_train_subjects": 320,
-  "distinct_heldout_subjects": 50,
+  "heldout_prompts": 312,
+  "heldout_coverage": {
+    "target_per_subject": 4,
+    "subjects_requested": 78,
+    "subjects_covered": 78,
+    "subjects_missing": [],
+    "subjects_short": [],
+    "prompts": 312,
+    "largest_cluster_share": 0.0128
+  },
+  "distinct_train_subjects": 310,
+  "distinct_heldout_subjects": 78,
   "subject_overlap": 0,
-  "response_words_p5": 102,
-  "response_words_p95": 200,
+  "response_words_p5": 103,
+  "response_words_p95": 202,
   "templates": [
     "Write a story about {subject}.",
     "Tell me a story about {subject}.",

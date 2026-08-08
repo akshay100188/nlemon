@@ -3,88 +3,88 @@
   "max_seq_tokens": 257,
   "reason": "sequence longer than context_len+1 = 257 tokens (prompt + response + <|endoftext|>)",
   "n_pairs": 40000,
-  "n_fit": 37808,
-  "n_dropped": 2192,
-  "drop_rate": 0.0548,
+  "n_fit": 37546,
+  "n_dropped": 2454,
+  "drop_rate": 0.06135,
   "prompt_tokens": {
-    "min": 10,
+    "min": 9,
     "median": 10,
     "max": 11
   },
   "tokens_per_word": {
-    "p5": 1.2185,
-    "median": 1.292,
-    "p95": 1.4384
+    "p5": 1.2176,
+    "median": 1.2908,
+    "p95": 1.4344
   },
   "all_words": {
-    "p5": 102,
-    "median": 146,
-    "p95": 200,
+    "p5": 103,
+    "median": 148,
+    "p95": 202,
     "max": 220
   },
   "surviving_words": {
-    "p5": 102,
-    "median": 144,
-    "p95": 189,
-    "max": 217
+    "p5": 103,
+    "median": 146,
+    "p95": 190,
+    "max": 218
   },
   "wall": {
-    "last_full_bin_to": 159,
+    "last_full_bin_to": 169,
     "last_half_bin_to": 199,
     "last_surviving_bin_to": 219
   },
   "band_verdict": {
     "registered_band": [
-      102,
-      200
+      103,
+      202
     ],
-    "band_top_quintile_from": 180,
-    "n_in_top_quintile": 8204,
-    "n_fit_in_top_quintile": 6898,
-    "top_quintile_survival": 0.8408,
-    "max_surviving_words": 217,
+    "band_top_quintile_from": 182,
+    "n_in_top_quintile": 5543,
+    "n_fit_in_top_quintile": 4148,
+    "top_quintile_survival": 0.7483,
+    "max_surviving_words": 218,
     "clipped_below_band_top": false,
     "surviving_band": [
-      102,
-      189
+      103,
+      190
     ]
   },
   "bins": [
     {
       "words_from": 60,
       "words_to": 69,
-      "n": 72,
-      "n_fit": 72,
+      "n": 75,
+      "n_fit": 75,
       "survival": 1.0,
-      "median_total_tokens": 88,
+      "median_total_tokens": 89,
       "min_total_tokens": 80,
-      "max_total_tokens": 99
+      "max_total_tokens": 100
     },
     {
       "words_from": 70,
       "words_to": 79,
-      "n": 218,
-      "n_fit": 218,
+      "n": 185,
+      "n_fit": 185,
       "survival": 1.0,
       "median_total_tokens": 100,
       "min_total_tokens": 91,
-      "max_total_tokens": 125
+      "max_total_tokens": 126
     },
     {
       "words_from": 80,
       "words_to": 89,
-      "n": 455,
-      "n_fit": 455,
+      "n": 407,
+      "n_fit": 407,
       "survival": 1.0,
-      "median_total_tokens": 112,
+      "median_total_tokens": 113,
       "min_total_tokens": 100,
-      "max_total_tokens": 142
+      "max_total_tokens": 148
     },
     {
       "words_from": 90,
       "words_to": 99,
-      "n": 887,
-      "n_fit": 887,
+      "n": 844,
+      "n_fit": 844,
       "survival": 1.0,
       "median_total_tokens": 126,
       "min_total_tokens": 111,
@@ -93,69 +93,69 @@
     {
       "words_from": 100,
       "words_to": 109,
-      "n": 1698,
-      "n_fit": 1698,
+      "n": 1575,
+      "n_fit": 1575,
       "survival": 1.0,
       "median_total_tokens": 139,
       "min_total_tokens": 121,
-      "max_total_tokens": 185
+      "max_total_tokens": 184
     },
     {
       "words_from": 110,
       "words_to": 119,
-      "n": 3046,
-      "n_fit": 3046,
+      "n": 2818,
+      "n_fit": 2818,
       "survival": 1.0,
-      "median_total_tokens": 152,
-      "min_total_tokens": 133,
-      "max_total_tokens": 199
+      "median_total_tokens": 151,
+      "min_total_tokens": 131,
+      "max_total_tokens": 196
     },
     {
       "words_from": 120,
       "words_to": 129,
-      "n": 4406,
-      "n_fit": 4406,
+      "n": 4174,
+      "n_fit": 4174,
       "survival": 1.0,
       "median_total_tokens": 163,
       "min_total_tokens": 142,
-      "max_total_tokens": 217
+      "max_total_tokens": 219
     },
     {
       "words_from": 130,
       "words_to": 139,
-      "n": 5392,
-      "n_fit": 5392,
+      "n": 5166,
+      "n_fit": 5166,
       "survival": 1.0,
       "median_total_tokens": 175,
       "min_total_tokens": 156,
-      "max_total_tokens": 228
+      "max_total_tokens": 223
     },
     {
       "words_from": 140,
       "words_to": 149,
-      "n": 5579,
-      "n_fit": 5579,
+      "n": 5477,
+      "n_fit": 5477,
       "survival": 1.0,
       "median_total_tokens": 186,
-      "min_total_tokens": 163,
+      "min_total_tokens": 166,
       "max_total_tokens": 247
     },
     {
       "words_from": 150,
       "words_to": 159,
-      "n": 4977,
-      "n_fit": 4977,
+      "n": 5058,
+      "n_fit": 5058,
       "survival": 1.0,
       "median_total_tokens": 198,
       "min_total_tokens": 174,
-      "max_total_tokens": 253
+      "max_total_tokens": 250
     },
     {
       "words_from": 160,
       "words_to": 169,
-      "n": 4131,
-      "n_fit": 4126,
-      "survival": 0.9988,
+      "n": 4251,
+      "n_fit": 4247,
+      "survival": 0.9991,
       "median_total_tokens": 211,
       "min_total_tokens": 189,
       "max_total_tokens": 273
@@ -163,61 +163,61 @@
     {
       "words_from": 170,
       "words_to": 179,
-      "n": 3169,
-      "n_fit": 3125,
-      "survival": 0.9861,
+      "n": 3339,
+      "n_fit": 3296,
+      "survival": 0.9871,
       "median_total_tokens": 222,
       "min_total_tokens": 200,
-      "max_total_tokens": 301
+      "max_total_tokens": 302
     },
     {
       "words_from": 180,
       "words_to": 189,
-      "n": 2268,
-      "n_fit": 2120,
-      "survival": 0.9347,
+      "n": 2442,
+      "n_fit": 2271,
+      "survival": 0.93,
       "median_total_tokens": 235,
-      "min_total_tokens": 213,
+      "min_total_tokens": 212,
       "max_total_tokens": 313
     },
     {
       "words_from": 190,
       "words_to": 199,
-      "n": 1604,
-      "n_fit": 1175,
-      "survival": 0.7325,
+      "n": 1805,
+      "n_fit": 1328,
+      "survival": 0.7357,
       "median_total_tokens": 248,
-      "min_total_tokens": 224,
-      "max_total_tokens": 311
+      "min_total_tokens": 222,
+      "max_total_tokens": 310
     },
     {
       "words_from": 200,
       "words_to": 209,
-      "n": 1163,
-      "n_fit": 478,
-      "survival": 0.411,
+      "n": 1296,
+      "n_fit": 549,
+      "survival": 0.4236,
       "median_total_tokens": 261,
-      "min_total_tokens": 237,
+      "min_total_tokens": 235,
       "max_total_tokens": 358
     },
     {
       "words_from": 210,
       "words_to": 219,
-      "n": 853,
-      "n_fit": 54,
-      "survival": 0.0633,
-      "median_total_tokens": 276,
+      "n": 1001,
+      "n_fit": 76,
+      "survival": 0.0759,
+      "median_total_tokens": 275,
       "min_total_tokens": 246,
       "max_total_tokens": 336
     },
     {
       "words_from": 220,
       "words_to": 229,
-      "n": 82,
+      "n": 87,
       "n_fit": 0,
       "survival": 0.0,
-      "median_total_tokens": 280,
-      "min_total_tokens": 260,
+      "median_total_tokens": 282,
+      "min_total_tokens": 261,
       "max_total_tokens": 327
     }
   ]
