@@ -1056,3 +1056,130 @@ Note what this does *not* loosen. The floors moved down by ~7 points from base, 
 itself moved *up* by 8 points on `is_story` when the generation cap was corrected
 (ADR-028), so the floor now sits at 0.701 against an originally-registered 0.690 — still
 marginally stricter than the bar this phase started with, and with the coin-flip removed.
+
+## ADR-030 — Appearing in a document is not being about it
+
+**Status.** Accepted, Phase 5, **after** the gate came back RED. Recorded as a diagnosis of
+a validity check that was owed and not run, not as grounds for re-reading the result.
+
+**Context.** Phase 5 came back RED: `subject_mention` reached 50.0% against a pre-registered
+bar of 60.0%. The other three sub-scores passed comfortably — `length_band` 43.5% to 95.5%,
+`is_story` 77.0% to 98.5%, `not_degenerate` 73.5% to 85.5% — and the shuffled control stayed
+inside its limit, so the failure is specific to subject adherence rather than general.
+
+Digging into the 100 misses: 12 of the 50 held-out subjects were *never once* mentioned,
+across any of the 200 responses. The list is the finding — `adventure`, `edge`, `floor`,
+`leaves`, `middle`, `people`, `prize`, `screen`, `sound`, `stage`, `table`, `lizard` —
+against a perfectly-scoring set of `bunny`, `frog`, `duck`, `prince`, `carrot`, `candy`,
+`basket`.
+
+**The cause.** `build_pairs` requires the subject to *appear* in the document. Appearing is
+not aboutness. "Once upon a time a girl dropped her toy on the floor" contains "a floor" as
+the head of a determiner phrase, so the miner accepts it, and the pair then teaches
+`Write a story about a floor.` to mean a story that says "floor" once in passing. The model
+learned exactly that, faithfully, and the checker then marks it wrong.
+
+Measured on the 40,000 training pairs (`python -m src.instruct aboutness`):
+
+    subject appears  0x        23    0.1%
+                     1x    19,096   47.7%
+                     2x     7,581   19.0%
+                     3x     4,221   10.6%
+                     4x     2,923    7.3%
+                    5+x     6,156   15.4%
+
+**47.8% of training pairs mention their subject at most once.** Weakest subjects by mean
+occurrences: `moral` 1.00, `moment` 1.00, `sudden` 1.00, `distance` 1.05, `while` 1.07.
+Strongest: `crane` 7.05, `swan` 7.04, `dove` 6.95, `goat` 6.72, `kitten` 6.18. The split is
+concrete story protagonists against abstract and relational nouns.
+
+The headedness filter cannot catch this, and it is worth being precise about why: in
+"a floor", `floor` **is** the head. The filter was built to reject modifiers — "a brave bird"
+promoting `brave` — and it does that correctly. Aboutness is an orthogonal property it was
+never measuring. Nor would a stopword list have worked; the residue includes `while`
+("after a while") and `sudden` ("all of a sudden"), where an idiom makes an abstract noun
+the legitimate head of its own phrase.
+
+**What this does not do.** It does not soften the RED. The bar was base plus 25.0 points,
+anchored to base measured on **the same 200 prompts**, including the unanswerable ones. Both
+sides paid the same penalty, so the comparison is apples-to-apples and the delta is the
+honest quantity. And on the 160 prompts whose subject was mentioned by at least one model,
+base scores 38.8% and sft 62.5% — a delta of **+23.8 points against a registered +25.0**.
+The bar is missed on the clean subset too, narrowly. The model came up short; the data made
+it come up shorter.
+
+Reporting the 160-prompt figure as the result would be the laundering move this project has
+already named once, in the length case: a bar the data was structurally incapable of
+clearing, pre-registered anyway, then re-read after the fact against a subset chosen because
+it was kinder. The subset number is a diagnosis of *why*, and it stays labelled as one.
+
+**Consequence.** `python -m src.instruct aboutness` is now a first-class command, and it is
+the check that should have run before the `subject_mention` bar was registered. Phase 5 had
+two pre-flight validity checks on the gate — base's own score for whether the *checker* was
+honest (ADR-026), and the surviving length distribution for whether the *length* bar was
+reachable (ADR-028) — and both passed. The third, whether the *subject* bar was answerable,
+was never written. The pattern was correct and its application was incomplete: a delta bar
+needs a ceiling measurement for **each** sub-score it covers, not for whichever one prompted
+the thought.
+
+The remedy for a Phase 5 retry is to require aboutness at pair-construction time — the
+subject must occur at least twice, or the earliest-determiner heuristic must be replaced by
+"most-repeated candidate" — and then to re-derive both the subject pool and the base floor
+before re-registering. That is a data change, so it moves the `sft` stage hash, and it is a
+new pre-registration rather than an adjustment to this one.
+
+## ADR-031 — The oov_plausibility band's first live firing was on base, not sft
+
+**Status.** Accepted, Phase 5.
+
+**Context.** `oov_plausibility` was built in Phase 4 to separate a *plausible* invented word
+from *garbage*, using a character-trigram model fitted to the known-word set. It then never
+fired: the Phase 4 gate scored 16 continuations of the gallery prompts and found zero
+out-of-vocabulary words, so the band went through an entire phase validated only against
+fixtures. Its first real test was owed.
+
+**Measurement.** `python -m src.checker oov` scores the 200 held-out instruction responses
+from each stage — roughly 20k words from base and 28k from sft — which is the condition the
+band was built for, unlike the gallery.
+
+    base   200 responses, 20,173 words
+      oov_rate          0.006097   band [0.000000, 0.002114]   OUT OF BAND
+      oov_plausibility  -2.6651    band [-2.7517, -1.8522]     ok
+      34 distinct OOV words
+
+    sft    200 responses, 28,418 words
+      oov_rate          0.000106   band [0.000000, 0.002114]   ok
+      oov_plausibility  -3.0792    band [-2.7517, -1.8522]     out, but n=3
+      3 distinct OOV words
+
+**The class matters more than the cell lighting up,** and base's class is unmistakable:
+`tellow` x24, `mrite` x21, `telle` x9, `arite` x7, plus `briite`, `micrite`, `brite`,
+`crite`, `tellia`, `thellow`, `tellell`. These are mangled forms of *the instruction verbs*.
+Base, handed "Write a story about..." or "Tell me a story about...", cannot parse it as an
+instruction and emits corrupted echoes of the opening verb.
+
+The two metrics say different true things and the pair is what makes the read work.
+Plausibility at -2.6651 sits *inside* the band: these are word-shaped inventions, not noise,
+which is correct — `tellow` and `brite` are pronounceable English-looking strings. The rate
+at 3x the corpus ceiling says there are far too many of them. Either metric alone would have
+reported half the story; `oov_rate` alone would have said "degenerate" without saying the
+words were well-formed, and `oov_plausibility` alone would have said "fine".
+
+**This also revises what Phase 4's coherence pass established.** That pass was measured on
+continuation prompts, and base is inside every band there. Under *instruction* prompts base
+goes out of band on `oov_rate`. The Phase 4 green was therefore conditional on the prompt
+distribution in a way that was not visible at the time — instruction prompts are
+out-of-distribution for a purely pretrained model, and that shows up as invented words.
+
+**On sft.** `oov_rate` fell 57x and returned inside the band, on 3 words: `sosophie`,
+`intooh`, `budy` — all collisions of real words rather than inventions. So the feared failure
+did not happen: SFT did not buy adherence by breaking coherence. Every coherence-side metric
+moved the same way (`is_story` 77.0 to 98.5, `not_degenerate` 73.5 to 85.5, `oov_rate`
+out-of-band to in-band), which is the opposite of the trade-off the floors were watching for.
+
+**Decision.** Report sft's `oov_plausibility` of -3.0792 as **too thin to read**, not as an
+out-of-band finding. A pooled mean over 3 words cannot be compared to a band bootstrapped
+from corpus groups holding orders of magnitude more (ADR-022); the number is real but carries
+no evidence. `cmd_oov` prints the caveat inline rather than leaving a reader to infer it,
+because "OUT OF BAND" next to a number is exactly the kind of thing that gets quoted without
+its sample size.

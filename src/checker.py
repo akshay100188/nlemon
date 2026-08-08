@@ -255,6 +255,89 @@ def cmd_score(cfg: Config, checkpoint: str, label: str) -> None:
 # the gate
 # --------------------------------------------------------------------------- #
 
+def cmd_oov(cfg: Config) -> None:
+    """The oov_plausibility watch, on the responses rather than the gallery.
+
+    Phase 4 scored `oov_rate` and `oov_plausibility` on 16 continuations of the
+    Phase 4 gallery prompts and found zero out-of-vocabulary words, so the
+    plausibility band never fired - it stayed dormant through the whole phase,
+    validated only against fixtures.
+
+    The 200 held-out instruction responses are the condition the band was built
+    for: ~28k words of instruction-conditioned output, from a stage where pushing
+    off-distribution is a real risk. And **which class of word fires matters more
+    than whether the cell lights up**. Word-shaped inventions mean the band is
+    doing its job. Garbage means the fine-tune bought adherence by breaking
+    coherence, which is the same failure the is_story floor guards against,
+    arriving through a different metric.
+    """
+    from src.coherence import CharModel, build_known_words, pooled_metrics, words_of
+
+    ref_p = REPO_ROOT / cfg.results_dir / "coherence_reference.json"
+    if not ref_p.exists():
+        raise SystemExit("run `python -m src.coherence reference` first.")
+    ref = json.loads(ref_p.read_text(encoding="utf-8"))
+    known = build_known_words(cfg)
+    char = CharModel(known)
+    print(f"known-word set: {len(known):,} words\n")
+
+    out = {"known_words": len(known), "bands": {
+        m: ref["bands"].get(m) for m in ("oov_rate", "oov_plausibility")}}
+    for label in ("base", "sft"):
+        p = REPO_ROOT / cfg.results_dir / f"sft_scores_{label}.json"
+        if not p.exists():
+            continue
+        texts = json.loads(p.read_text(encoding="utf-8"))["responses"]
+        nw = sum(len(words_of(t)) for t in texts)
+        pooled = pooled_metrics(texts, known, char)
+        oov: dict[str, int] = {}
+        for t in texts:
+            for w in words_of(t):
+                if w not in known:
+                    oov[w] = oov.get(w, 0) + 1
+        ranked = sorted(oov.items(), key=lambda kv: -kv[1])
+        rate_band = ref["bands"]["oov_rate"]
+        plaus_band = ref["bands"]["oov_plausibility"]
+        rate_ok = rate_band["low"] <= pooled["oov_rate"] <= rate_band["high"]
+        v = pooled["oov_plausibility"]
+
+        print(f"{label}: {len(texts)} responses, {nw:,} words")
+        print(f"  oov_rate         {pooled['oov_rate']:.6f}  "
+              f"band [{rate_band['low']:.6f}, {rate_band['high']:.6f}]  "
+              f"{'ok' if rate_ok else 'OUT OF BAND'}")
+        if v != v:
+            print(f"  oov_plausibility DORMANT - zero OOV words to score")
+        else:
+            n_oov = sum(oov.values())
+            # A pooled mean over a handful of words cannot be compared to a band
+            # bootstrapped from corpus groups holding far more (ADR-022). Saying
+            # "out of band" on n=3 would be reading noise as a finding.
+            thin = n_oov < 30
+            ok = plaus_band["low"] <= v <= plaus_band["high"]
+            print(f"  oov_plausibility {v:.4f}  "
+                  f"band [{plaus_band['low']:.4f}, {plaus_band['high']:.4f}]  "
+                  f"{'ok' if ok else 'OUT OF BAND'}"
+                  f"{f'  (but n={n_oov} OOV words - too thin to read)' if thin else ''}")
+        print(f"  {len(oov)} distinct OOV words"
+              + (":" if oov else " - nothing invented"))
+        for w, c in ranked[:20]:
+            print(f"    {w:<20} x{c:<4} char-trigram logprob {char.logprob(w):>7.3f}")
+        print()
+        out[label] = {
+            "responses": len(texts), "words": nw,
+            "oov_rate": pooled["oov_rate"], "oov_rate_in_band": bool(rate_ok),
+            "oov_plausibility": None if v != v else round(v, 6),
+            "n_oov_tokens": sum(oov.values()), "n_oov_distinct": len(oov),
+            "oov_words": [{"word": w, "count": c,
+                           "char_logprob": round(char.logprob(w), 4)}
+                          for w, c in ranked],
+        }
+
+    from utils.io import write_json
+    write_json(REPO_ROOT / cfg.results_dir / "sft_oov.json", out)
+    print(f"wrote {REPO_ROOT / cfg.results_dir / 'sft_oov.json'}")
+
+
 def _se_diff(p: float, n: int) -> float:
     """SE of a paired difference, at the unpaired upper bound.
 
@@ -343,7 +426,7 @@ def cmd_gate(cfg: Config) -> None:
                       "bar": bar, "pass": bool(ok),
                       "kind": "delta" if s in DELTA_SCORES else "floor",
                       "rule": bars[s]["rule"]}
-        print(f"  {s:<17} {b:>6.1%} {v:>6.1%} {v - b:>+7.1f}pt {bar:>6.1%}  "
+        print(f"  {s:<17} {b:>6.1%} {v:>6.1%} {(v - b) * 100:>+6.1f}pt {bar:>6.1%}  "
               f"{'PASS' if ok else 'FAIL':<8}  {bars[s]['rule']}")
 
     # The validity check. This can invalidate a PASS, which is the point: if
@@ -359,7 +442,7 @@ def cmd_gate(cfg: Config) -> None:
           f"max {cfg.sft_gate_shuffled_max:.1%}  "
           f"{'OK' if shuf_ok else 'INVALIDATES THE PASS'}")
     print(f"    above chance       base {above_b:>6.1%}  sft {above_s:>6.1%}  "
-          f"({above_s - above_b:+.1f}pt)")
+          f"({(above_s - above_b) * 100:+.1f}pt)")
 
     deltas_pass = all(results[s]["pass"] for s in DELTA_SCORES)
     floors_pass = all(results[s]["pass"] for s in FLOOR_SCORES)
@@ -384,13 +467,85 @@ def cmd_gate(cfg: Config) -> None:
         "config_hash": cfg.hash(), "sft_stage_hash": cfg.stage_hash("sft"),
     })
     print(f"wrote {REPO_ROOT / cfg.results_dir / 'sft_gate.json'}")
+    _write_gate_report(cfg, base, sft, results, bars, green, deltas_pass,
+                       floors_pass, shuf_ok)
     if not green:
         raise SystemExit(1)
 
 
+def _write_gate_report(cfg: Config, base: dict, sft: dict, results: dict,
+                       bars: dict, green: bool, deltas_pass: bool,
+                       floors_pass: bool, shuf_ok: bool) -> None:
+    from utils.io import write_text
+
+    d = base["decoding"]
+    lo, hi = base["length_band"]
+    lines = [
+        f"# Phase 5 gate: {'GREEN' if green else 'RED'}",
+        "",
+        f"`base.pt` versus `sft.pt` on {base['scores']['n']} held-out prompts over "
+        "**disjoint subjects**, at identical pinned decoding "
+        f"(T={d['temperature']}, top-k={d['top_k']}, {d['new_tokens']} new tokens), "
+        "scored by the same deterministic checker.",
+        "",
+        "Every bar below is recomputed by `src/checker.py gate` from base's "
+        "recorded scores and cross-checked against the frozen config value. "
+        "Deltas were agreed before `src/sft.py` existed (ADR-027); the floors were "
+        "set by rule before `sft.pt` was scored (ADR-029).",
+        "",
+        "| sub-score | kind | base | sft | delta | bar | verdict | how the bar was set |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for s in ALL_SCORES:
+        r = results[s]
+        lines.append(
+            f"| `{s}` | {r['kind']} | {r['base']:.1%} | {r['sft']:.1%} | "
+            f"{r['delta'] * 100:+.1f} pt | {r['bar']:.1%} | "
+            f"**{'PASS' if r['pass'] else 'FAIL'}** | {r['rule']} |")
+
+    sb = base["scores"]["subject_mention_shuffled"]
+    ss = sft["scores"]["subject_mention_shuffled"]
+    lines += [
+        "",
+        f"Mean response length: base {base['scores']['mean_words']:.2f} words, "
+        f"sft {sft['scores']['mean_words']:.2f}. Band {lo}-{hi} words.",
+        "",
+        "## Validity: the shuffled-subject control",
+        "",
+        "This can **invalidate a pass**, not only fail one. If subject-mention "
+        "climbs while the shuffled rate climbs with it, the model has learned to "
+        "name more nouns rather than the right one, and the headline stops meaning "
+        "adherence (ADR-026).",
+        "",
+        f"| | base | sft | limit |",
+        "|---|---|---|---|",
+        f"| shuffled subject-mention | {sb:.1%} | {ss:.1%} | "
+        f"{cfg.sft_gate_shuffled_max:.1%} |",
+        f"| matched, above chance | "
+        f"{base['scores']['subject_mention_above_chance']:.1%} | "
+        f"{sft['scores']['subject_mention_above_chance']:.1%} | - |",
+        "",
+        f"Verdict: **{'valid' if shuf_ok else 'INVALID'}**. Subject-mention rose "
+        f"{results['subject_mention']['delta'] * 100:+.1f} points while the "
+        f"shuffled rate moved {(ss - sb) * 100:+.1f}, so the gain is adherence "
+        "rather than noun-spraying.",
+        "",
+        "## Outcome",
+        "",
+        f"- deltas: **{'PASS' if deltas_pass else 'FAIL'}**",
+        f"- floors: **{'PASS' if floors_pass else 'FAIL'}**",
+        f"- validity: **{'OK' if shuf_ok else 'BROKEN'}**",
+        "",
+        f"**PHASE 5: {'GREEN' if green else 'RED'}**",
+        "",
+        "Generated by `python -m src.checker gate`.",
+    ]
+    write_text(REPO_ROOT / cfg.results_dir / "sft_gate.md", "\n".join(lines))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Deterministic feature-checker (Phase 5).")
-    ap.add_argument("command", choices=("demo", "score", "gate"))
+    ap.add_argument("command", choices=("demo", "score", "gate", "oov"))
     ap.add_argument("--config", default=None)
     ap.add_argument("--checkpoint", default="checkpoints/base.pt")
     ap.add_argument("--label", default="base")
@@ -400,6 +555,8 @@ def main() -> None:
         cmd_demo(cfg)
     elif args.command == "gate":
         cmd_gate(cfg)
+    elif args.command == "oov":
+        cmd_oov(cfg)
     else:
         cmd_score(cfg, args.checkpoint, args.label)
 

@@ -291,14 +291,76 @@ def cmd_pairs(cfg: Config) -> None:
     print(f"wrote {out_dir / 'sft_train.json'} and {out_dir / 'sft_heldout.json'}")
 
 
+def cmd_aboutness(cfg: Config) -> None:
+    """Is each pair's response actually ABOUT its subject? (ADR-030)
+
+    `build_pairs` requires the subject to *appear* in the document. Appearing is
+    not aboutness. "Once upon a time a girl dropped her toy on the floor" contains
+    "a floor" as the head of a determiner phrase, so the miner accepts it, and the
+    pair then teaches `Write a story about a floor.` -> a story that says "floor"
+    once in passing. The model learns that faithfully, and then a checker asking
+    "did you mention the subject" marks it wrong.
+
+    The headedness filter cannot catch this: in "a floor", `floor` *is* the head.
+    Nor can any stopword list I would have to keep complete - the residue includes
+    `while` ("after a while") and `sudden` ("all of a sudden"), where the idiom
+    makes an abstract noun the head of its phrase.
+
+    The proxy is repetition. A story genuinely about a rabbit says "rabbit" over
+    and over; a story that merely happens near a floor says "floor" once. This is
+    the check that should have run before the subject_mention bar was registered -
+    the answerability twin of the length census in `src/sft_data.py`, and the one
+    that was missed.
+    """
+    import json
+
+    from src.coherence import words_of
+
+    train = json.loads((REPO_ROOT / cfg.data_dir / "sft_train.json")
+                       .read_text(encoding="utf-8"))
+    counts: Counter = Counter()
+    per_subject: dict[str, list[int]] = {}
+    for p in train:
+        n = words_of(p["response"]).count(p["subject"])
+        counts[min(n, 5)] += 1
+        per_subject.setdefault(p["subject"], []).append(n)
+
+    tot = sum(counts.values())
+    print(f"subject occurrences per response, over {tot:,} training pairs:")
+    for k in sorted(counts):
+        print(f"  {'5+' if k >= 5 else k:>3}x : {counts[k]:>6,}  {counts[k]/tot:>6.1%}")
+    once_or_less = (counts[0] + counts[1]) / tot
+    print(f"\n  {once_or_less:.1%} of pairs mention the subject at most ONCE.")
+    print(f"  Those teach 'write about X' -> a story that says X in passing.")
+
+    means = {s: sum(v) / len(v) for s, v in per_subject.items() if len(v) >= 20}
+    ranked = sorted(means.items(), key=lambda kv: kv[1])
+    print(f"\n  weakest aboutness (mean occurrences per response):")
+    print("    " + ", ".join(f"{s} {m:.2f}" for s, m in ranked[:15]))
+    print(f"  strongest:")
+    print("    " + ", ".join(f"{s} {m:.2f}" for s, m in ranked[-10:][::-1]))
+
+    write_json(REPO_ROOT / cfg.results_dir / "sft_aboutness.json", {
+        "pairs": tot,
+        "occurrence_histogram": {("5+" if k >= 5 else str(k)): counts[k]
+                                 for k in sorted(counts)},
+        "frac_at_most_once": round(once_or_less, 6),
+        "subject_mean_occurrences": {s: round(m, 4) for s, m in ranked},
+        "weakest": [s for s, _ in ranked[:20]],
+        "strongest": [s for s, _ in ranked[-20:][::-1]],
+    })
+    print(f"\nwrote {REPO_ROOT / cfg.results_dir / 'sft_aboutness.json'}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="SFT instruction pairs (Phase 5).")
-    ap.add_argument("command", choices=("subjects", "pairs"))
+    ap.add_argument("command", choices=("subjects", "pairs", "aboutness"))
     ap.add_argument("--config", default=None)
     args = ap.parse_args()
     cfg = Config.load(args.config)
     set_seed(cfg.seed, strict=cfg.strict_determinism)
-    cmd_subjects(cfg) if args.command == "subjects" else cmd_pairs(cfg)
+    {"subjects": cmd_subjects, "pairs": cmd_pairs,
+     "aboutness": cmd_aboutness}[args.command](cfg)
 
 
 if __name__ == "__main__":
