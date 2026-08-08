@@ -1283,3 +1283,84 @@ hash untouched. The stage hash is what proves which act occurred.
 scorecard reports both attempts. The `subject_mention` bar for attempt #2 is registered in a
 commit of its own, ahead of the code that derives the new pairs, in the same shape as
 `3d8ba40`.
+
+## ADR-033 — 312 prompts are not 312 observations, and attempt #1's floor was understated
+
+**Status.** Accepted, Phase 5 attempt #2, before the attempt #2 fine-tune.
+
+**Context.** Every threshold in this phase is priced off a detection floor — the smallest
+difference the eval can tell apart from noise. Attempt #1 computed that floor as
+`1.96 * sqrt(2p(1-p)/n)` with `n = 200`, the number of held-out prompts, and reported
+**9.3 points**. On that basis the +25.0 delta was described as **2.7x noise**.
+
+The 200 prompts were not 200 independent observations. They clustered into 50 subjects, and
+outcomes correlate hard inside a subject: a model that can talk about `bunny` gets every
+bunny prompt right, and one that cannot get any of them right. Attempt #1's own data shows
+it starkly — 20 subjects scored 100% and 12 scored 0%.
+
+**Measurement.** A one-way random-effects ANOVA over subjects gives the intra-class
+correlation, and the design effect follows as `deff = 1 + (m_bar - 1) * ICC`:
+
+| | ICC | deff | n_eff (of 200) |
+|---|---|---|---|
+| `subject_mention` (base) | 0.298 | 1.89 | 105.7 |
+| `subject_mention` (sft) | 0.333 | 2.00 | 100.0 |
+| `is_story` | 0.120 | 1.36 | 147.1 |
+| `not_degenerate` | 0.016 | 1.05 | 191.0 |
+| `length_band` | 0.000 | 1.00 | 200.0 |
+
+`subject_mention` — the one sub-score carrying the phase's claim — is also the one that
+clusters hardest, which is not a coincidence: subject adherence is *a property of the
+subject*, so of course it correlates within one.
+
+**So the attempt #1 record needs correcting in two places, neither of which is cosmetic.**
+
+The real two-sided detection floor was **12.9 points, not 9.3**. The +25.0 delta was
+**1.9x noise, not 2.7x**. And `sft.pt`'s 10-point shortfall against the 60.0% bar sat
+*inside* that floor — the RED still holds, because a bar is a bar and a one-sided test of
+`sft >= 0.60` against an observed 50.0% at `n_eff = 100` gives p = 0.023, but it holds by
+less margin than the write-up implied. "Missed the bar" is correct; "missed it comfortably"
+would not have been.
+
+The other correction is that `length_band`'s ICC is essentially zero. Response length has
+nothing to do with which subject was asked for, so its prompts really were independent and
+its floor really was ~8 points. Reporting one detection floor for all four sub-scores was
+wrong in both directions at once, and it is the same error ADR-024 already named in a
+different costume: **sub-scores that move for different reasons need their own statistics,
+not a shared one.**
+
+**Decision, in three parts.**
+
+1. **Price every bar on `n_eff`, recomputed per sub-score.** `src/checker.py effective_n`
+   derives ICC and the design effect from the per-prompt rows at gate time, so the floor
+   tracks whichever eval set is in use rather than a number typed in once.
+
+2. **Sample the held-out set balanced across subjects.** Attempt #1 built it by scanning
+   until it had 200 pairs, which takes the *first* 200 matching documents and therefore
+   over-samples common subjects: one subject carried 34 of the 200 prompts, 17% of the eval
+   riding on a single word. Attempt #2 takes 4 prompts from each of all 78 held-out
+   subjects — 312 prompts, largest cluster 1.3%.
+
+   **Capping prompts-per-subject was considered and rejected by measurement, not taste.**
+   It is the obvious fix and it is the wrong one: it lowers `m_bar` but lowers `n` faster.
+   Priced against the measured ICC of 0.33, a 3-per-subject cap yields `n_eff = 84`, *worse*
+   than the 106 it was meant to repair. More subjects is the lever; fewer prompts each is
+   not. With `k` subjects and ICC `r`, `n_eff` is bounded above by `k/r` no matter how many
+   prompts are added — 164 at attempt #1's 50 subjects, 236 at attempt #2's 78.
+
+3. **Register an AMBER band.** `GREEN` at or above the bar, `RED` below `bar - 1.96*SE`, and
+   `AMBER` in between: missed, but by less than this eval can resolve. Attempt #1 had no
+   amber, which is precisely why its 10-point shortfall had to be *argued about after the
+   fact* rather than classified by a rule agreed in advance. AMBER is not a pass, and per
+   ADR-032 it does not license a third attempt — it is where the capacity finding lives.
+
+**Consequence, and the part worth carrying past this project.** Balanced sampling did more
+than raise `n_eff` arithmetically. ICC fell from **0.33 to 0.083**, mostly because the
+aboutness-cleaned pool no longer contains subjects that are structurally 0% or 100%. The two
+fixes compound: removing unanswerable subjects removes the between-subject variance that was
+making the clustering expensive in the first place. `n_eff` went from ~106 to ~250 on a
+prompt count that rose only from 200 to 312, and the detection floor fell from 12.9 points
+to 8.8.
+
+A gate is only as sharp as the number of independent observations behind it, and "how many
+prompts did you run" is not that number.
