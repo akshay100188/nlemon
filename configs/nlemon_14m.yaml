@@ -215,7 +215,15 @@ sft_gate_amber_z: 1.96
 # Set at ~2x the corpus chance rate: above that the model is spraying nouns.
 sft_gate_shuffled_max: 0.06
 
-# --- PRE-REGISTERED Phase 6 non-regression floors (ADR-037) -------------------
+# --- PRE-REGISTERED Phase 6 floors (ADR-037), roles swapped by ADR-038 ------
+# ADR-038: subject_mention is now Phase 6's DELTA TARGET, not a floor - it is
+# the only axis left with measurable headroom (70.8% vs a 100% ceiling) after
+# resolution, fluency and aboutness-depth all measured saturated. The floors
+# that matter are therefore length_band, is_story and not_degenerate, which
+# have 5.4x-13.1x of room and are where a trade would now show. The
+# certification floor below stays registered: it costs nothing, and a DPO run
+# that LOWERED the metric it was aimed at is exactly what it would catch.
+# --- original ADR-037 text follows -------------------
 # Registered before any preference pair exists and before any DPO code exists.
 # Phase 6's base is sft.pt (attempt #2). The question is NOT "did preference
 # improve subject adherence" but "did preference cost me the adherence already
@@ -252,8 +260,13 @@ dpo_floor_not_degenerate: 0.880     # sft 90.1% - 0.842*SE(2.40%)
 # DPO; that rate is reported alongside any breach.
 dpo_certification_floor_subject_mention: 0.653
 
-# --- the resolution axis (Phase 6's DPO target) -------------------------------
-# Chosen because token-level cross-entropy CANNOT express it: a story that
+# --- the resolution axis (measured SATURATED; kept for the Phase 7 harness) -------------------------------
+# Was to be Phase 6's target. It is not: sft.pt scores 47.1% against a 49.0%
+# corpus ceiling, and the gap SHRINKS as the detector widens while sft-base
+# grows to +11.5, so the instrument works and the axis is saturated (ADR-038).
+# Kept because a corpus-derived closure metric that detects an 11.5-point SFT
+# gain belongs in Phase 7's eval harness.
+# It was chosen because token-level cross-entropy CANNOT express it: a story that
 # resolves and one that trails off are both locally fluent and both are
 # high-probability continuations, so SFT's loss is blind to the difference by
 # construction. DPO learns from contrast, which is the one thing that can see it.

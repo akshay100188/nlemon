@@ -1621,3 +1621,102 @@ either be designed out or designed in, and which is a decision to make in the pa
 rather than discover at the gate. What Phase 6's *delta* metric should be — the thing DPO is
 supposed to improve — is likewise open, because it depends on what the preference signal is
 built to express.
+
+## ADR-038 — Three DPO axes measured saturated; Phase 6 targets the floor metric
+
+**Status.** Accepted at Phase 6 scoping, **before** any preference pair or DPO code exists.
+
+**Context.** Phase 6's signal had to be chosen before pairs were built, because the pairs are
+the signal made concrete. Three candidates were on the table, and the fork was posed as
+technique-demonstration (fluency preference, the canonical DPO signal) versus
+capability-improvement (story resolution). The answer to the fork was *technique
+demonstration* — that is what nLemon is — executed on resolution, because a fluency delta
+looked unmeasurable and the demonstration value would be carried by defending the subject
+floor rather than by the choice of signal.
+
+Then the pre-flight measured all three, which is what pre-flights are for.
+
+**Resolution — saturated.** `src/resolution.py` mines closure markers *from the corpus*,
+final sentences against non-final by smoothed log-odds, never hand-listed — the same
+discipline that built the coherence bands from percentiles instead of opinion (ADR-018). The
+markers are unmistakably TinyStories: `ending`, `vowed`, `onward`, `moral`, `cherish`,
+`happily`, `reminder`, `memories`.
+
+    corpus 49.0%   base.pt 35.6%   sft.pt 47.1%   headroom 1.9 pt
+
+And the reading "saturated axis" was separated from the reading "coarse detector" by watching
+the **gap** across detector widths rather than the levels:
+
+| markers | corpus | sft | base | gap c−s | sft−base |
+|---|---|---|---|---|---|
+| 20 | 15.1% | 12.2% | 10.9% | +2.9 | +1.3 |
+| 60 | 34.6% | 29.8% | 26.0% | +4.8 | +3.8 |
+| 120 | 49.0% | 47.1% | 35.6% | **+1.9** | **+11.5** |
+
+The gap *shrinks* as the detector widens while `sft − base` grows to +11.5. The instrument
+is not blind — it detected SFT's own gain on this exact axis — it has nothing left to see.
+
+**Fluency — saturated, and this one had been dismissed by assertion.** Killing resolution by
+measurement made the unmeasured claim about fluency the weakest thing on the table, so it got
+the same test:
+
+| | corpus | sft.pt |
+|---|---|---|
+| repeated 4-gram rate | 0.0081 | 0.0122 |
+| max repeat run > 2 | 0.3% | **0.0%** |
+| type/token ratio | 0.533 | 0.524 |
+| oov rate | 0.00000 | 0.00004 |
+| mean sentence words | 10.46 | 10.54 |
+
+`sft.pt` is worse than the corpus on repeated 4-grams (both far inside the `[0, 0.0333]`
+band), **better** than the corpus on repeat runs, and matched everywhere else. The assertion
+happened to be correct; it is now measured, which is the only version that counts.
+
+**Aboutness depth — saturated, and informatively so.** The last candidate: SFT taught subject
+*mention*, and cross-entropy cannot distinguish a story that names the subject once from one
+genuinely about it. Unconditionally this looked like the biggest opportunity on the board —
+`>=2 occurrences` showed sft 62.8% against a 100% corpus, +37.2 points. Conditioning on
+mentioning at all dissolves it:
+
+| | mentions | \|≥2 | \|≥3 | \|≥4 | mean\|≥1 |
+|---|---|---|---|---|---|
+| corpus | 100.0% | 100.0% | 80.1% | 56.1% | 4.28 |
+| sft.pt | 70.8% | 88.7% | 78.3% | 65.2% | **4.89** |
+
+When `sft.pt` mentions the subject, it mentions it **more** than the corpus does. The +37.2
+was the `subject_mention` gap counted a second time under a different name — the same
+double-counting shape as the outcome-selected subset in ADR-030, caught earlier this time.
+
+**Decision.** Phase 6 targets **`subject_mention`**, and the floor/target roles swap.
+
+Post-SFT this model sits at corpus parity on every quality axis the project can measure. The
+one exception is the metric SFT was worst at and the one ADR-037 registered as a floor: 70.8%
+against a 100% ceiling, **29.2 points**, the only headroom left. Targeting anything else
+would be optimizing a variable already at parity, and the delta would be unmeasurable by
+construction.
+
+* **Delta target:** `subject_mention`.
+* **Floors:** `length_band`, `is_story`, `not_degenerate` — the three with 5.4x to 13.1x of
+  room, which is where a trade would now show.
+* **Validity, promoted to load-bearing:** the shuffled-subject control. It was a check on the
+  Phase 5 headline; here it is the *only* thing standing between this signal and
+  noun-spraying, because a naive subject-mention objective is precisely an instruction to say
+  the word more often.
+* The `dpo_certification_floor_subject_mention` of 65.3% registered in ADR-037 becomes
+  trivially satisfied if the target is met. It stays registered rather than being deleted:
+  it costs nothing, and a DPO run that *lowered* the metric it was aimed at is exactly the
+  outcome worth catching.
+
+**What this phase can honestly claim, stated before the result exists.** Not "DPO taught a
+new capability" — the measurement above forecloses that story. The claim is narrower and
+better evidenced: **SFT's objective plateaued at 70.8% across two full attempts, and DPO's
+contrastive objective is a structurally different attack on the same axis.** Cross-entropy
+raises the likelihood of documents that happen to contain the subject; it has no way to
+express *"this response is about the right thing and that one drifted."* Whether contrast
+closes a gap likelihood could not is a real question with a real answer in either direction,
+and two attempts of plateau is the evidence that the question is worth asking.
+
+**Consequence.** `src/resolution.py` is kept despite failing as a target. A corpus-derived
+narrative-closure metric that detects an 11.5-point SFT gain is a genuine addition to the
+Phase 7 eval harness; it just cannot be Phase 6's objective. Negative results that cost a
+module are cheaper than positive results that cost a phase.
