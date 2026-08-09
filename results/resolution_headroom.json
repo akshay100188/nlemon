@@ -1,0 +1,5672 @@
+{
+  "n": 312,
+  "markers": 120,
+  "stages": {
+    "corpus": {
+      "terminal": 0.996795,
+      "marker": 0.490385,
+      "resolved": 0.490385
+    },
+    "base": {
+      "terminal": 0.887821,
+      "marker": 0.36859,
+      "resolved": 0.355769
+    },
+    "sft": {
+      "terminal": 0.980769,
+      "marker": 0.471154,
+      "resolved": 0.471154
+    }
+  },
+  "base_per_prompt": [
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end",
+        "story",
+        "always"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": false,
+      "marker": true,
+      "resolved": false,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "never",
+        "forget",
+        "story"
+      ],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "important"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 26
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 29
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 27
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4542,
+      "markers_hit": [
+        "content"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 27
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7727,
+      "markers_hit": [
+        "asleep"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8362,
+      "markers_hit": [
+        "difference",
+        "story"
+      ],
+      "sentences": 2
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 31
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "never"
+      ],
+      "sentences": 3
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 24
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.897,
+      "markers_hit": [
+        "knowing"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "happiness"
+      ],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "wonderful",
+        "story"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1146,
+      "markers_hit": [
+        "never",
+        "forget"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8568,
+      "markers_hit": [
+        "wonderful"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7431,
+      "markers_hit": [
+        "remember"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 26
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "always"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8568,
+      "markers_hit": [
+        "wonderful"
+      ],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 4
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story",
+        "kindness",
+        "always",
+        "memory"
+      ],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "though"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.7229,
+      "markers_hit": [
+        "always",
+        "conflict"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 33
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 29
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "adventures"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1146,
+      "markers_hit": [
+        "never",
+        "forget"
+      ],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "important"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.2997,
+      "markers_hit": [
+        "adventures",
+        "ever"
+      ],
+      "sentences": 2
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never",
+        "lesson",
+        "learned"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.3696,
+      "markers_hit": [
+        "learnt",
+        "kindness",
+        "always",
+        "others"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9008,
+      "markers_hit": [
+        "adventures"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8969,
+      "markers_hit": [
+        "kindness"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 2
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7598,
+      "markers_hit": [
+        "lesson"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 39
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8568,
+      "markers_hit": [
+        "wonderful"
+      ],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "never",
+        "forget",
+        "story"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 4
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 32
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": false,
+      "marker": true,
+      "resolved": false,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 27
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.3832,
+      "markers_hit": [
+        "forward"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8568,
+      "markers_hit": [
+        "wonderful"
+      ],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 3
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 22
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 31
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 34
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story",
+        "seem",
+        "always"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 41
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 29
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4542,
+      "markers_hit": [
+        "content"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 25
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "matter",
+        "seem"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.3274,
+      "markers_hit": [
+        "whenever",
+        "always"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.1065,
+      "markers_hit": [
+        "known"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7431,
+      "markers_hit": [
+        "remember",
+        "remember",
+        "remember",
+        "remember"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0668,
+      "markers_hit": [
+        "memory"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8151,
+      "markers_hit": [
+        "dreams"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 2
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 26
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 30
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "lesson"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 29
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.2997,
+      "markers_hit": [
+        "ever"
+      ],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.1065,
+      "markers_hit": [
+        "known"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "visited",
+        "always"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "important",
+        "story",
+        "never",
+        "forget"
+      ],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "always"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end",
+        "story",
+        "story"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 2
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "important",
+        "others"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": false,
+      "marker": true,
+      "resolved": false,
+      "marker_strength": 2.1211,
+      "markers_hit": [
+        "story"
+      ],
+      "sentences": 26
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 28
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 24
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 4
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 32
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4542,
+      "markers_hit": [
+        "content"
+      ],
+      "sentences": 2
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 28
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9016,
+      "markers_hit": [
+        "visited"
+      ],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 24
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "matter",
+        "always",
+        "remember"
+      ],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7431,
+      "markers_hit": [
+        "remember"
+      ],
+      "sentences": 2
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 2
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 24
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0311,
+      "markers_hit": [
+        "thankful"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 29
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 26
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 20
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8362,
+      "markers_hit": [
+        "difference"
+      ],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.3055,
+      "markers_hit": [
+        "forever"
+      ],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.897,
+      "markers_hit": [
+        "knowing",
+        "difference"
+      ],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8568,
+      "markers_hit": [
+        "wonderful"
+      ],
+      "sentences": 4
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 30
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.9668,
+      "markers_hit": [
+        "luckiest",
+        "always"
+      ],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 6
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 2
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 1
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 28
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 22
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8568,
+      "markers_hit": [
+        "wonderful"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 5
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 27
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 31
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 26
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": false,
+      "marker": true,
+      "resolved": false,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 3
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 7
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 0
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 1
+    }
+  ],
+  "sft_per_prompt": [
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.3274,
+      "markers_hit": [
+        "whenever"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "important"
+      ],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "seem"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "others"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "others"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.863,
+      "markers_hit": [
+        "continued"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.897,
+      "markers_hit": [
+        "knowing"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "learned",
+        "matter",
+        "always",
+        "never"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7766,
+      "markers_hit": [
+        "spending"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9659,
+      "markers_hit": [
+        "important",
+        "others"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "important",
+        "remember"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "important"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.2189,
+      "markers_hit": [
+        "learned",
+        "valuable",
+        "lesson"
+      ],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 22
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.2997,
+      "markers_hit": [
+        "ever"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.863,
+      "markers_hit": [
+        "continued"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.3832,
+      "markers_hit": [
+        "forward"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9235,
+      "markers_hit": [
+        "though"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "learned",
+        "always"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "learned",
+        "lesson",
+        "never"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9235,
+      "markers_hit": [
+        "though"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 27
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "learned",
+        "always"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1035,
+      "markers_hit": [
+        "knowledge"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 20
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "important",
+        "others",
+        "whenever"
+      ],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.1065,
+      "markers_hit": [
+        "known",
+        "bravest"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "continued",
+        "always"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "important"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "always",
+        "others"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 20
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.863,
+      "markers_hit": [
+        "continued"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8143,
+      "markers_hit": [
+        "such"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8362,
+      "markers_hit": [
+        "learned",
+        "difference"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "learned",
+        "lesson",
+        "always"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9235,
+      "markers_hit": [
+        "though"
+      ],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned"
+      ],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9235,
+      "markers_hit": [
+        "though"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8304,
+      "markers_hit": [
+        "important"
+      ],
+      "sentences": 21
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 20
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8143,
+      "markers_hit": [
+        "such"
+      ],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.2997,
+      "markers_hit": [
+        "ever"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "important",
+        "others"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never",
+        "never"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8892,
+      "markers_hit": [
+        "such",
+        "loving"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "others"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8568,
+      "markers_hit": [
+        "wonderful"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "learned",
+        "lesson",
+        "always"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "learned",
+        "always",
+        "others"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9008,
+      "markers_hit": [
+        "adventures"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8304,
+      "markers_hit": [
+        "important"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "remember"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end",
+        "such"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.912,
+      "markers_hit": [
+        "matter"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4684,
+      "markers_hit": [
+        "happily",
+        "ever"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 20
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.3055,
+      "markers_hit": [
+        "forever"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "though"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "learned",
+        "important",
+        "always"
+      ],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.2997,
+      "markers_hit": [
+        "ever"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9235,
+      "markers_hit": [
+        "though"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8143,
+      "markers_hit": [
+        "such"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4583,
+      "markers_hit": [
+        "learned",
+        "lesson",
+        "future"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 23
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "remember",
+        "remember"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 20
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "important",
+        "others"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "important"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.2997,
+      "markers_hit": [
+        "ever"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7431,
+      "markers_hit": [
+        "remember"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7727,
+      "markers_hit": [
+        "asleep"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 8
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 9
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": false,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 20
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.863,
+      "markers_hit": [
+        "continued"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.4542,
+      "markers_hit": [
+        "content",
+        "content"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.8568,
+      "markers_hit": [
+        "wonderful"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "important"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.7534,
+      "markers_hit": [
+        "seem"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.3696,
+      "markers_hit": [
+        "learnt",
+        "valuable",
+        "lesson",
+        "important"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1097,
+      "markers_hit": [
+        "never"
+      ],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "always"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 19
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "others",
+        "others"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.0934,
+      "markers_hit": [
+        "learned",
+        "others"
+      ],
+      "sentences": 10
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 1.9008,
+      "markers_hit": [
+        "adventures"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.8639,
+      "markers_hit": [
+        "moral",
+        "story",
+        "important",
+        "others"
+      ],
+      "sentences": 18
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.2997,
+      "markers_hit": [
+        "ever",
+        "always"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always",
+        "never"
+      ],
+      "sentences": 17
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 11
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 3.2945,
+      "markers_hit": [
+        "end"
+      ],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 12
+    },
+    {
+      "terminal": true,
+      "marker": true,
+      "resolved": true,
+      "marker_strength": 2.1112,
+      "markers_hit": [
+        "always"
+      ],
+      "sentences": 16
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 15
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 14
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    },
+    {
+      "terminal": true,
+      "marker": false,
+      "resolved": false,
+      "marker_strength": 0.0,
+      "markers_hit": [],
+      "sentences": 13
+    }
+  ]
+}

@@ -252,6 +252,18 @@ dpo_floor_not_degenerate: 0.880     # sft 90.1% - 0.842*SE(2.40%)
 # DPO; that rate is reported alongside any breach.
 dpo_certification_floor_subject_mention: 0.653
 
+# --- the resolution axis (Phase 6's DPO target) -------------------------------
+# Chosen because token-level cross-entropy CANNOT express it: a story that
+# resolves and one that trails off are both locally fluent and both are
+# high-probability continuations, so SFT's loss is blind to the difference by
+# construction. DPO learns from contrast, which is the one thing that can see it.
+# Ending markers are MINED from the corpus - final sentences against non-final,
+# by smoothed log-odds - never hand-listed, for the same reason the coherence
+# bands come from percentiles rather than opinion (ADR-018).
+resolution_scan_docs: 200000
+resolution_markers: 120
+resolution_min_marker_count: 50
+
 # --- data -------------------------------------------------------------------
 dataset_name: roneneldan/TinyStories
 dataset_revision: main      # resolved to an exact commit sha in data/manifest.json
