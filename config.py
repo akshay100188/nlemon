@@ -137,6 +137,13 @@ STAGE_EXEMPT: dict[str, str] = {
     "sft_gate_is_story_min": "pre-registered gate threshold",
     "sft_gate_not_degenerate_min": "pre-registered gate threshold",
     "sft_gate_shuffled_max": "pre-registered gate threshold",
+    "dpo_floor_green_z": "pre-registered Phase 6 gate threshold",
+    "dpo_floor_red_z": "pre-registered Phase 6 gate threshold",
+    "dpo_floor_subject_mention": "pre-registered Phase 6 gate threshold",
+    "dpo_floor_length_band": "pre-registered Phase 6 gate threshold",
+    "dpo_floor_is_story": "pre-registered Phase 6 gate threshold",
+    "dpo_floor_not_degenerate": "pre-registered Phase 6 gate threshold",
+    "dpo_certification_floor_subject_mention": "pre-registered Phase 6 gate threshold",
 }
 
 
@@ -280,6 +287,15 @@ class Config:
     sft_gate_is_story_min: float = 0.699
     sft_gate_not_degenerate_min: float = 0.645
     sft_gate_shuffled_max: float = 0.06
+
+    # Phase 6 non-regression floors, registered before any DPO code (ADR-037).
+    dpo_floor_green_z: float = 0.842
+    dpo_floor_red_z: float = 1.645
+    dpo_floor_subject_mention: float = 0.670
+    dpo_floor_length_band: float = 0.912
+    dpo_floor_is_story: float = 0.972
+    dpo_floor_not_degenerate: float = 0.880
+    dpo_certification_floor_subject_mention: float = 0.653
 
     # data
     dataset_name: str = "roneneldan/TinyStories"

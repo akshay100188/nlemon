@@ -1413,6 +1413,16 @@ corpus-wide median tokens-per-word implies, so a corpus-average ratio is the wro
 for a question about the tail. The empirical count overrides the ratio, and the ratio should
 not have been reported as a finding before the count was available.
 
+**This is the Phase 2 tokenizer-sweep error in different clothes, and the two belong
+together in any write-up.** There, compression ratio *plateaued* at 25,000 training
+documents — judged on that one averaged metric, 25k was indistinguishable from 800k — while
+vocabulary overlap kept moving, so the plateau was a property of the summary statistic
+rather than of the tokenizer. Here, a corpus-average ratio said the tail was unreachable
+while the tail itself was demonstrably being reached. Same defect twice: **an averaged
+statistic answering a question about the distribution's edge.** A mean is the wrong
+instrument for a tail question, and it fails in the direction that looks reasonable, which is
+why neither instance announced itself.
+
 **Consequence.** Every future gate adds one step between "measurement corrected" and "run
 launched": re-derive the bar from the corrected measurement and check it against the frozen
 value, by a method that does not share an input with the original derivation. `derive_bars`
@@ -1483,3 +1493,131 @@ Note what this does **not** change about attempt #2: three sub-scores clear deci
 shuffled control held (0.6% to 1.9% against a 6.0% limit, while matched rose 23.1 points),
 and the `subject_mention` *delta* is 2.6x noise. The finding is about how confidently one
 number may be quoted, not about whether the fine-tune worked.
+
+## ADR-036 — The shell is a hazard class, not three coincidences
+
+**Status.** Accepted, end of Phase 5. Recorded as one entry replacing three incident notes.
+
+**Context.** Three separate times this project has been damaged or misled by the *toolchain
+around* the model rather than by the model, and all three were PowerShell idioms behaving
+exactly as documented:
+
+1. **`Get-Content | Set-Content -Encoding utf8`** re-encoded tracked source files and
+   corrupted them — twice, the second time on `README.md` during the Phase 4 audit, and then
+   compounded by running `ftfy` over the docs, which "repaired" the intentional mojibake
+   examples in ADR-009. Fixed by restoring from `HEAD` and editing through tooling that does
+   not round-trip encodings; guarded permanently by `scripts/check_encoding.py` with pinned
+   golden byte sequences.
+
+2. **Here-strings and inline quoting** silently mangled commit messages and produced
+   `SyntaxError` in inline Python often enough that the standing rule became: write a
+   scratchpad file, never inline a multi-line string.
+
+3. **`Select-Object -First 12`** terminated the pipeline once it had twelve objects, killing
+   the console attached to the attempt #2 fine-tune and reporting **exit 255**. The training
+   itself ran to completion — all 1,722 steps, confirmed by `sft_train_summary.json` and a
+   106-row curve — but the log stops at exactly twelve lines and the harness recorded a
+   failure. A **false red**, produced entirely by the observing command.
+
+**Decision.** Record these as one hazard class rather than three incidents, because the
+lesson is singular and the count is the evidence: **the instrumentation around a measurement
+can lie in the same ways the measurement can, and it gets far less scrutiny because nobody
+thinks of `Select-Object` as part of the experiment.**
+
+Each of the three has the same shape as a defect this project already guards against in the
+model pipeline. Encoding corruption is an unverified transform (ADR-009). A mangled commit
+message is an artifact that does not match what produced it (ADR-010). And exit 255 on a
+successful run is **a green check lying in the other direction** — the mirror of ADR-021,
+where `verify_docs` printed success while skipping real claims. Here the tool printed failure
+while the work succeeded. A status that disagrees with the artifact is untrustworthy in both
+directions, and the response is the same either way: check the artifact, not the status.
+
+**Consequence.** Three standing rules, all already in force:
+
+* Never pipe a long-running process through a pipeline-terminating cmdlet. Redirect to a
+  file and read the file.
+* Never inline multi-line strings into a shell. Write the file, pass the path.
+* Never let a tool re-encode a tracked file; `scripts/check_encoding.py` runs pre-commit.
+
+And one line for the write-up, which is the point of consolidating: *the toolchain around the
+model is as capable of lying as the model is.* That is this project's thesis wearing work
+clothes, and it took three self-inflicted wounds to notice that the thesis applied to the
+workbench and not only to the thing on it.
+
+## ADR-037 — Phase 6 inherits a metric with no margin, and the gate is a floor because of it
+
+**Status.** Accepted at Phase 6 scoping, **before** any preference pairs are constructed and
+before any DPO code exists.
+
+**Context.** Phase 5 attempt #2 closed GREEN, with `subject_mention` flagged as a grazing
+pass (ADR-035). Phase 6 fine-tunes DPO on top of that checkpoint, so `sft.pt` is Phase 6's
+base and the grazing is inherited. Stated as a number rather than a caveat:
+
+| sub-score | sft.pt | Phase 5 bar | margin | ICC | n_eff | floor | margin / floor |
+|---|---|---|---|---|---|---|---|
+| `subject_mention` | 70.8% | 65.3% | **+5.5 pt** | 0.182 | 202 | 8.9 pt | **0.63 — none** |
+| `length_band` | 92.9% | 67.8% | +25.1 pt | 0.025 | 290 | 4.2 pt | 6.0x |
+| `is_story` | 98.1% | 69.9% | +28.1 pt | 0.000 | 312 | 2.2 pt | 13.1x |
+| `not_degenerate` | 90.1% | 64.5% | +25.5 pt | 0.000 | 312 | 4.7 pt | 5.4x |
+
+Floors are priced on **sft.pt's own clustering**, which is worse than base's for the metric
+that matters: ICC 0.182 against 0.083, so `n_eff` is 202 rather than 250 and the floor is 8.9
+points rather than 8.8. The margin sits further inside the noise than Phase 5's registration
+showed, not less far.
+
+**The ambiguity is permanent at this eval design, so no compute can buy it away.** `n_eff` is
+bounded above by `k / ICC` = 78 / 0.182 = **429** however many prompts are added. At that
+ceiling the detection floor is 6.1 points, still above the 5.5-point margin:
+
+    312 prompts   n_eff 202   floor 8.9pt   not resolvable
+    624 prompts   n_eff 274   floor 7.6pt   not resolvable
+    ceiling       n_eff 429   floor 6.1pt   not resolvable
+
+Only *more held-out subjects* would help, and that means re-splitting the pool, which means
+retraining `sft.pt` — i.e. redoing Phase 5. Not worth it, but it must be said out loud so
+nobody later proposes "just run more prompts" as though it were a fix.
+
+**The risk this creates.** Preference optimization optimizes for the preference signal. If
+that signal even slightly favours fluency, length, or story-ness over subject fidelity, the
+model will spend its 5.5 grazing points buying preference reward and land back below the bar
+that an entire extra attempt was run to clear. The other three sub-scores have 5.4x to 13.1x
+of room to absorb a trade; `subject_mention` has none. **DPO must not assume subject-adherence
+has margin to spend. It does not.**
+
+**Decision.** Phase 6's gate on these four is a **non-regression floor**, not a delta. The
+question is not "did preference improve subject adherence" but "did preference cost me the
+adherence already paid for" — the same shape as `is_story`-as-floor in Phase 5, applied to
+the metric that can least afford to move.
+
+*Registered before pair construction:*
+
+| sub-score | GREEN (p > 0.20) | AMBER (0.05 < p <= 0.20) | RED (p <= 0.05) |
+|---|---|---|---|
+| `subject_mention` | >= 67.0% | 63.4% - 67.0% | < 63.4% |
+| `length_band` | >= 91.2% | 89.5% - 91.2% | < 89.5% |
+| `is_story` | >= 97.2% | 96.3% - 97.2% | < 96.3% |
+| `not_degenerate` | >= 88.0% | 86.1% - 88.0% | < 86.1% |
+
+Plus a **side-condition on `subject_mention` alone: `dpo >= 65.3%`.** Below the Phase 5 bar,
+Phase 5's certification is void whatever the regression test says. This is the tighter of the
+two candidate rules — the mechanical ADR-029 line would have been 63.4%, which would have let
+DPO land at 64% and report "no regression" while sitting below the bar Phase 5 was certified
+against. It costs roughly an 11% false-breach rate on a behaviourally neutral DPO, and that
+rate gets reported alongside any breach rather than discovered afterwards.
+
+**Why the amber band is shaped differently here, and this is a correction to how ADR-035
+transfers.** ADR-035 installed a two-sided amber for a **delta bar**, where *clearing* is the
+achievement and a narrow clearance is the ambiguous case. Applied mechanically to a floor
+defined as `sft - k*SE`, it breaks: holding steady at `sft` is by construction only `k*SE`
+above the floor, so with an amber half-width of `1.96*SE` **every metric lands AMBER on a
+neutral DPO** — an artifact of the definition, not a finding. For a floor, *holding* is the
+achievement, so the three zones come from the one-sided significance of the **drop** instead:
+no evidence of regression, suggestive, established. A rule that produces the same verdict for
+"nothing changed" as for "something might have" is not classifying anything.
+
+**Consequence and scope limit.** This ADR registers the floors only. It deliberately does not
+choose the preference-pair construction, which is where the subject-versus-fluency trade will
+either be designed out or designed in, and which is a decision to make in the pair design
+rather than discover at the gate. What Phase 6's *delta* metric should be — the thing DPO is
+supposed to improve — is likewise open, because it depends on what the preference signal is
+built to express.

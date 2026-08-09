@@ -215,6 +215,43 @@ sft_gate_amber_z: 1.96
 # Set at ~2x the corpus chance rate: above that the model is spraying nouns.
 sft_gate_shuffled_max: 0.06
 
+# --- PRE-REGISTERED Phase 6 non-regression floors (ADR-037) -------------------
+# Registered before any preference pair exists and before any DPO code exists.
+# Phase 6's base is sft.pt (attempt #2). The question is NOT "did preference
+# improve subject adherence" but "did preference cost me the adherence already
+# paid for" - so these are FLOORS, not deltas.
+#
+# The inheritance, as a number rather than a caveat:
+#                     sft.pt   P5 bar   margin   n_eff   floor   margin/floor
+#   subject_mention    70.8%    65.3%    +5.5p     202    8.9p    0.63  NONE
+#   length_band        92.9%    67.8%   +25.1p     290    4.2p    6.0x
+#   is_story           98.1%    69.9%   +28.1p     312    2.2p   13.1x
+#   not_degenerate     90.1%    64.5%   +25.5p     312    4.7p    5.4x
+#
+# subject_mention has no margin to spend. If the preference signal even slightly
+# favours fluency or length over subject fidelity, DPO will spend those 5.5
+# points buying reward and land back under the bar Phase 5 was retried to clear.
+# The other three can absorb a trade; this one cannot.
+#
+# Zones come from the one-sided significance of the DROP from sft.pt, not from a
+# band around the floor. ADR-035's two-sided amber was written for a delta bar
+# where CLEARING is the achievement; for a floor, HOLDING is, and applying that
+# shape mechanically puts "nothing changed" in the amber zone by construction.
+dpo_floor_green_z: 0.842      # p > 0.20  : no evidence of regression
+dpo_floor_red_z: 1.645        # p <= 0.05 : established regression
+dpo_floor_subject_mention: 0.670    # sft 70.8% - 0.842*SE(4.52%)
+dpo_floor_length_band: 0.912        # sft 92.9% - 0.842*SE(2.13%)
+dpo_floor_is_story: 0.972           # sft 98.1% - 0.842*SE(1.10%)
+dpo_floor_not_degenerate: 0.880     # sft 90.1% - 0.842*SE(2.40%)
+
+# Side-condition on subject_mention ALONE. Below the Phase 5 bar, Phase 5's
+# certification is void whatever the regression test says. This is the tighter of
+# the two candidate rules: the mechanical ADR-029 line would have been 63.4%,
+# which would let DPO land at 64% and report "no regression" while sitting under
+# the bar Phase 5 was certified against. Costs ~11% false-breach on a neutral
+# DPO; that rate is reported alongside any breach.
+dpo_certification_floor_subject_mention: 0.653
+
 # --- data -------------------------------------------------------------------
 dataset_name: roneneldan/TinyStories
 dataset_revision: main      # resolved to an exact commit sha in data/manifest.json
