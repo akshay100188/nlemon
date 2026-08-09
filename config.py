@@ -147,6 +147,15 @@ STAGE_EXEMPT: dict[str, str] = {
     "dpo_gate_subject_mention_delta": "pre-registered Phase 6 gate threshold",
     "dpo_gate_subject_mention_min": "pre-registered Phase 6 gate threshold",
     "dpo_gate_amber_z": "pre-registered Phase 6 gate threshold",
+    "pref_prompts": "preference-pair construction (stage added with dpo.py)",
+    "pref_samples": "preference-pair construction",
+    "pref_max_length_gap": "preference-pair construction",
+    "dpo_beta": "dpo training (stage added with the dpo run)",
+    "dpo_lr": "dpo training",
+    "dpo_epochs": "dpo training",
+    "dpo_micro_batch": "dpo training",
+    "dpo_grad_accum_steps": "dpo training",
+    "dpo_warmup_steps": "dpo training",
     "resolution_scan_docs": "metric construction; no weight depends on it",
     "resolution_markers": "metric construction",
     "resolution_min_marker_count": "metric construction",
@@ -307,6 +316,17 @@ class Config:
     dpo_gate_subject_mention_delta: float = 0.125
     dpo_gate_subject_mention_min: float = 0.833
     dpo_gate_amber_z: float = 1.96
+    # Preference-pair construction (ADR-039). Train subjects only.
+    pref_prompts: int = 3000
+    pref_samples: int = 6
+    pref_max_length_gap: int = 15
+    # DPO training (ADR-039). lr far below SFT's: DPO re-ranks, it does not teach.
+    dpo_beta: float = 0.1
+    dpo_lr: float = 5.0e-7
+    dpo_epochs: int = 1
+    dpo_micro_batch: int = 4
+    dpo_grad_accum_steps: int = 8
+    dpo_warmup_steps: int = 50
     resolution_scan_docs: int = 200_000
     resolution_markers: int = 120
     resolution_min_marker_count: int = 50

@@ -291,6 +291,30 @@ dpo_gate_subject_mention_min: 0.833     # 70.8% + 12.5
 #   AMBER-   bar - 1.96*SE <= dpo < bar   missed, but inside the noise
 #   RED      dpo < bar - 1.96*SE       resolvable miss
 dpo_gate_amber_z: 1.96
+
+# Preference pairs. On-policy from sft.pt on BOTH sides, so DPO re-ranks a
+# distribution it already samples instead of being pulled off it. 6 samples per
+# prompt gives a good chance of drawing both a faithful and an unfaithful one at
+# sft.pt's 70.8% mention rate.
+pref_prompts: 3000
+pref_samples: 6
+# Chosen and rejected must land within this many words of each other, matched
+# AFTER the aboutness filter rather than before (ADR-039): a story genuinely
+# about its subject may run longer, so filtering a matched pool would un-match it
+# at the point of selection. 15 words is ~10% of the 144-word mean response.
+pref_max_length_gap: 15
+
+# DPO training. lr is 100x below SFT's 5e-5 and this is a single epoch, both for
+# the same reason: DPO re-ranks a distribution rather than teaching one, and past
+# its useful point it sharpens toward the preference signal until it trades every
+# other property against it. Over-training here is the failure mode the floors and
+# the "do not extend" amber response (ADR-039) exist to catch.
+dpo_beta: 0.1
+dpo_lr: 5.0e-7
+dpo_epochs: 1
+dpo_micro_batch: 4          # two models resident, so half SFT's micro-batch
+dpo_grad_accum_steps: 8     # effective batch 32 pairs
+dpo_warmup_steps: 50
 #
 # PRE-COMMITTED AMBER RESPONSE, because at 1.41x an amber is genuinely likely
 # and "what do we do then" must not be decided after seeing the number.
