@@ -260,6 +260,60 @@ dpo_floor_not_degenerate: 0.880     # sft 90.1% - 0.842*SE(2.40%)
 # DPO; that rate is reported alongside any breach.
 dpo_certification_floor_subject_mention: 0.653
 
+# --- PRE-REGISTERED Phase 6 delta bar (ADR-039) -------------------------------
+# Registered in its own commit ahead of the pair-building code, same discipline
+# as 3d8ba40 and 3294842. DPO's base is sft.pt: subject_mention 70.8%, ceiling
+# 100.0%, headroom 29.2pt, ICC 0.182, n_eff 202, detection floor 8.9pt.
+dpo_gate_subject_mention_delta: 0.125
+dpo_gate_subject_mention_min: 0.833     # 70.8% + 12.5
+#
+# 1.41x the detection floor - DELIBERATELY weaker than Phase 5's 2.0x, and the
+# reasoning is the inverse of every bar set so far. Prior bars measured a
+# capability being TAUGHT, where a low bar is decorative. This one measures how
+# far a refinement technique can re-rank a distribution the model already has.
+# DPO cannot teach subject-adherence; sft.pt already has it. DPO can only shift
+# weight toward the subject-faithful samples the model already produces, and the
+# ceiling on that is bounded by what is in the distribution to re-rank.
+#
+# Setting +17.8 to match 2.0x would be the low-bar trap pointed the other way:
+# not "so low it cannot fail" but "so high it fails for a reason that is not the
+# model's fault". A RED at +17.8 would say only that re-ranking was asked to do
+# teaching's job.
+#
+# The anchor, with its bias stated: Phase 5's SFT closed 44% of its subject
+# headroom BY TEACHING. 44% of the remaining 29.2pt is +12.8, which is the
+# OPTIMISTIC edge rather than a neutral estimate. +12.5 rounds just inside it.
+# The multiple is lower because the claim is smaller.
+#
+# Two-sided amber, per ADR-035, because this is a delta bar and not a floor:
+#   GREEN    dpo >= bar + 1.96*SE      cleared by more than the eval can resolve
+#   AMBER+   bar <= dpo < bar + 1.96*SE   cleared, but grazing
+#   AMBER-   bar - 1.96*SE <= dpo < bar   missed, but inside the noise
+#   RED      dpo < bar - 1.96*SE       resolvable miss
+dpo_gate_amber_z: 1.96
+#
+# PRE-COMMITTED AMBER RESPONSE, because at 1.41x an amber is genuinely likely
+# and "what do we do then" must not be decided after seeing the number.
+# Unlike an undertraining amber, the answer is NOT "run DPO longer": DPO past its
+# useful point sharpens toward the preference signal until it trades everything
+# else against it, so extending is the one move that converts a weak result into
+# a broken one.
+#   amber delta + all floors green  -> DPO refined weakly but honestly. Report
+#                                      it, close the phase, do not extend.
+#   amber delta + ANY floor breached -> DPO is spending the grazing margin.
+#                                      Stop, report the trade, do not extend.
+# Those are opposite diagnoses with opposite responses, which is why the floors
+# are read BEFORE the delta.
+#
+# GATE READ ORDER, fixed here so it cannot be chosen after the fact:
+#   1. side-condition  subject_mention >= 0.653   is Phase 5 still certified?
+#   2. floors          length_band / is_story / not_degenerate
+#   3. delta           subject_mention >= 0.833   did DPO improve its target?
+# The headline improvement is read LAST. Both things that can void the phase sit
+# upstream of it, and sft.pt has only 5.6 points of margin over the
+# side-condition - the least room anywhere in this phase, and the first thing a
+# fluency-adjacent leak in the pairs would spend.
+
 # --- the resolution axis (measured SATURATED; kept for the Phase 7 harness) -------------------------------
 # Was to be Phase 6's target. It is not: sft.pt scores 47.1% against a 49.0%
 # corpus ceiling, and the gap SHRINKS as the detector widens while sft-base

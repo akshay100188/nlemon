@@ -1720,3 +1720,106 @@ and two attempts of plateau is the evidence that the question is worth asking.
 narrative-closure metric that detects an 11.5-point SFT gain is a genuine addition to the
 Phase 7 eval harness; it just cannot be Phase 6's objective. Negative results that cost a
 module are cheaper than positive results that cost a phase.
+
+## ADR-039 — A bar priced to the mechanism, not to the appearance of stringency
+
+**Status.** Accepted, registered in its own commit **ahead of the pair-building code**.
+
+**Context.** Every prior delta bar in this project was pushed *up*, toward the decisive
+multiple and away from the friendly one, because each measured a capability the model was
+being **taught**: `<= 8` perplexity could fail on undertraining, `+25` subject-mention could
+fail on capacity, and a low bar there would have been decorative.
+
+Phase 6 is not that. It measures how far a **refinement** technique can re-rank a
+distribution the model already has. DPO cannot teach subject-adherence — `sft.pt` already
+has it at 70.8% — it can only shift weight toward the subject-faithful samples the model
+already produces, and the ceiling on that is bounded by what is in the distribution to
+re-rank.
+
+**Decision.** `subject_mention` delta **+12.5 points, bar 83.3%**, which is **1.41x** the
+8.9-point detection floor — deliberately weaker than Phase 5's 2.0x.
+
+Matching 2.0x would have meant +17.8, asking DPO to close 61% of remaining headroom with no
+evidence it can. That is the low-bar trap pointed the other way: not *"a bar so low it cannot
+fail"* but *"a bar so high it fails for a reason that is not the model's fault."* A RED at
++17.8 would say only that re-ranking had been asked to do teaching's job, which is a fact
+about the registration rather than about DPO.
+
+The anchor, with its bias stated rather than buried: Phase 5's SFT closed **44%** of its
+subject headroom **by teaching**. 44% of the remaining 29.2 points is +12.8 — the
+**optimistic** edge, not a neutral estimate, because refinement should not be expected to
+match teaching. +12.5 rounds just inside it, which is the honest direction to round.
+
+**The multiple being lower than Phase 5's is not a defect to apologise for.** It is the
+correct signal that this bar measures something a weaker mechanism does. The write-up says
+so directly: *the multiple is lower because the claim is smaller — DPO refines, it does not
+teach, and the bar is priced to what refinement can honestly deliver.* Pricing a bar to the
+mechanism is more rigorous than pricing it to look stringent.
+
+**Two-sided amber** per ADR-035, since this is a delta bar and not a floor:
+
+    GREEN    dpo >= 92.2%          cleared by more than the eval can resolve
+    AMBER+   83.3% - 92.2%         cleared, but grazing
+    AMBER-   74.4% - 83.3%         missed, but inside the noise
+    RED      < 74.4%               resolvable miss
+
+**Pre-committed amber response**, because at 1.41x an amber is genuinely likely and the
+answer must not be chosen after seeing the number. Critically, **the answer is not "run DPO
+longer."** An undertraining amber extends steps; a DPO amber must not. DPO past its useful
+point sharpens toward the preference signal until it starts trading everything else against
+it, so extending is the single move that converts a weak result into a broken one.
+
+* **amber delta + all floors green** — DPO refined weakly but honestly. Report it, close the
+  phase, do not extend.
+* **amber delta + any floor breached** — DPO is spending the grazing margin. Stop, report the
+  trade, do not extend.
+
+Those are **opposite diagnoses with opposite responses**, which is precisely why the floors
+are read before the delta.
+
+**Gate read order, fixed here so it cannot be chosen after the fact:**
+
+1. **side-condition** — `subject_mention >= 65.3%`. Is Phase 5 still certified?
+2. **floors** — `length_band`, `is_story`, `not_degenerate`.
+3. **delta** — `subject_mention >= 83.3%`. Did DPO improve its target?
+
+The headline improvement is read **last**. Both things that can void the phase sit upstream
+of it, and `sft.pt` has only 5.6 points of margin over the side-condition — the least room
+anywhere in this phase, and the first thing a fluency-adjacent leak in the pairs would spend.
+
+**Pair construction, registered with the bar because the design determines what the bar can
+mean.** On-policy: sample k responses from `sft.pt` per training prompt, chosen = one that is
+about the subject, rejected = one that is not. Both sides come from the model's own
+distribution, so DPO re-ranks what it already samples rather than being pulled off it.
+
+*The matched control is the load-bearing decision.* Chosen and rejected must be comparable on
+**length and `is_story`**, so subject fidelity is the only systematic difference. Without it
+the preference signal would encode "longer is better" or "ends with a period is better" —
+inside the pairs, where no gate can see it, with the floors sitting green while DPO optimised
+the exact trade they exist to catch. This is the answer to the sharpest question the phase
+invites: *how do you know DPO taught subject-fidelity and not length?* Because the pairs were
+matched on length, so length could not be the signal.
+
+*And the match must hold jointly, not marginally.* Matching on length and separately on
+`is_story` is not enough if the aboutness filter layered on top correlates with length — a
+story genuinely about its subject may well run longer, and if it does, matched pairs
+**un-match themselves at the point of selection**. The check is therefore length parity of
+chosen against rejected **after** the aboutness filter, not before. If they have drifted,
+re-match after filtering rather than before.
+
+Chosen must clear **aboutness >= 2**, not bare mention. Selecting on bare mention is literally
+an instruction to say the word more often; the shuffled control catches noun-spraying at the
+gate, and requiring depth in the pair design is how it is avoided rather than merely detected.
+
+**Rejected alternatives, and the second is the dangerous one.** *A corpus story about a
+different subject* — contrast too easy, teaches "match the topic noun", and off-policy. *A
+corpus story about the right subject as chosen* — this is not merely off-policy, it is **the
+phase's confound in disguise**: chosen would be human text and rejected model text, so DPO
+would learn "sound like the corpus", which is the fluency signal wearing a subject label. It
+is the option a future reader is most likely to think was clever, so it is named here.
+
+**Held-out discipline.** Pairs are built from the **310 train subjects only**; the **78
+held-out subjects never appear**. That is what keeps the Phase 6 number a generalisation
+claim rather than a memorisation one, the same standard as Phase 5, and it must not slip when
+the eval is built: held-out 78 are eval subjects, train 310 are pair subjects, and they do
+not cross.

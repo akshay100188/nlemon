@@ -144,6 +144,9 @@ STAGE_EXEMPT: dict[str, str] = {
     "dpo_floor_is_story": "pre-registered Phase 6 gate threshold",
     "dpo_floor_not_degenerate": "pre-registered Phase 6 gate threshold",
     "dpo_certification_floor_subject_mention": "pre-registered Phase 6 gate threshold",
+    "dpo_gate_subject_mention_delta": "pre-registered Phase 6 gate threshold",
+    "dpo_gate_subject_mention_min": "pre-registered Phase 6 gate threshold",
+    "dpo_gate_amber_z": "pre-registered Phase 6 gate threshold",
     "resolution_scan_docs": "metric construction; no weight depends on it",
     "resolution_markers": "metric construction",
     "resolution_min_marker_count": "metric construction",
@@ -300,6 +303,10 @@ class Config:
     dpo_floor_not_degenerate: float = 0.880
     dpo_certification_floor_subject_mention: float = 0.653
     # Resolution axis (Phase 6). Markers are mined from the corpus, never listed.
+    # Phase 6 delta target (ADR-039). Priced on sft.pt's own clustering.
+    dpo_gate_subject_mention_delta: float = 0.125
+    dpo_gate_subject_mention_min: float = 0.833
+    dpo_gate_amber_z: float = 1.96
     resolution_scan_docs: int = 200_000
     resolution_markers: int = 120
     resolution_min_marker_count: int = 50
