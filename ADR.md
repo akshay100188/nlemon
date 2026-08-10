@@ -2673,3 +2673,138 @@ prompts cluster by subject, and a bar priced on nominal `n` is too tight.
 Metrics and bars are deliberately **not** proposed here. The scope fixes *what kind of thing*
 the harness may measure and claim; the specific sub-scores and their thresholds are a separate
 pre-registration, to be agreed before the harness is built and never after a number exists.
+
+## ADR-049 — Phase 7 pre-registration: metrics, bars, frozen eval sets
+
+**Status:** proposed, awaiting sign-off. **No harness code exists.** [ADR-048](#adr-048) fixed
+what kind of thing Phase 7 may measure and claim; this fixes the specific metrics, the bars, and
+the frozen sets — before the harness that reads them.
+
+### The structural decision: Phase 7 gates the instrument, not the model
+
+Every prior phase gated a capability being acquired, so a bar on the model was the natural
+object. Phase 7 acquires nothing. It certifies. And **a scorecard that invents new model bars
+after the model exists is fitting bars to a known result** — precisely what this project refuses
+in ADR-017's family.
+
+So the gate is on the **instrument**: is this scorecard trustworthy, reproducible, computed over
+the registered set, on the declared device? The model's characteristics are **reported**, with
+their precision, and compared against what is already recorded.
+
+This is not an evasion, and the test is whether anything can still fail. Four things can, and
+one of them can fail *because of the model*: the recompute-vs-recorded check (G4) would fail if
+`sft.pt` no longer reproduces the numbers Phase 5 published for it. That is a real risk with a
+real consequence, and it is the check the audit in ADR-047 was an unplanned rehearsal for.
+
+**If a new model-performance bar is wanted, it must be registered in its own commit before the
+harness measures anything** — the standing rule, not waived here.
+
+### The frozen eval sets
+
+Registered in `config.py`, cross-checked by `src/evalset.py` on every run, **mismatch refuses
+rather than re-hashes**:
+
+| set | size | sha256 | what it measures |
+| --- | --- | --- | --- |
+| `data/val.bin` | **4,682,459 tokens** | `1becd214fbd57322…` | perplexity |
+| `data/sft_heldout.json` | 312 prompts / 78 subjects | `b1ef0f7989a10527…` | feature metrics |
+
+`val.bin` is the **entire** validation split, not a sample. That is what discharges ADR-020's
+"large fixed evaluation set, not 100 random batches": a full split has no sampling seed to choose
+and nothing to reselect, so the set cannot drift without the hash moving. The artifacts stay
+gitignored because both regenerate from recorded inputs — **the hash is the part that cannot be
+silently wrong**, and it is the part that ships.
+
+### G1–G4: the instrument gates. Binary, no amber
+
+These are facts, not measurements, so a three-state verdict would be a category error.
+
+* **G1 — eval-set integrity.** Both hashes match. Refuse otherwise, with the drift printed.
+* **G2 — environment.** Device asserted (`--require-device`, default `cuda`), CPU only via
+  explicit `--allow-cpu`, and `{type, name, torch, cuda_available}` recorded in every artifact.
+  *Already implemented and verified firing* — exit 1, no artifact written, error naming the venv
+  ([ADR-047](#adr-047)).
+* **G3 — determinism.** Two consecutive full runs produce a bit-identical scorecard, wall-clock
+  excluded. This is the gate that makes every number below citable; `strict_determinism` exists
+  for it (ADR-016).
+* **G4 — recompute versus recorded.** Every metric the harness recomputes that also exists in a
+  frozen artifact must agree **exactly** for greedy metrics and within the declared seed for
+  sampled ones. **Disagreement is surfaced as RED-blocking and never overwritten** — the
+  discipline that ADR-047's audit demonstrated working, where the committed `sft` scores were
+  re-derived, matched 312/312, and gained provenance without a value moving.
+
+### G5: the one measured bar, and it is about precision, not performance
+
+**The scorecard's headline perplexity must carry a measured relative standard error ≤ 1.0%.**
+
+Registered *from the eval set's size*, which is a design fact known before any model number
+exists, so it cannot be fitted:
+
+* iid over 4,682,459 tokens at a per-token NLL sd of ~2.0 nats → SE ≈ 0.00092 nats → **0.092%**
+  relative on perplexity.
+* That figure is a **lower bound and must not be published as the precision.** Tokens cluster
+  within documents, so ADR-033 applies: the harness must **measure the design effect over
+  documents** and report `n_eff`, not assume independence. At a plausible document-level ICC of
+  0.05 over ~213 tokens per document, `deff ≈ 11.6`, `n_eff ≈ 403k`, and the relative SE is
+  ~0.31%.
+* **1.0% is therefore ~3× headroom over the clustered estimate and ~11× over the iid one.** It is
+  a bar the design already clears, which is the point: it exists to catch a *future* eval set
+  that is too small to support a headline, and to force the design effect to be measured rather
+  than waved at.
+
+If the measured SE exceeds 1.0%, the harness must say the headline is imprecise rather than
+print it.
+
+### Reported, never gated, never blended
+
+* **Perplexity** on the frozen set, with measured SE, ICC and `n_eff`.
+* **The four Phase 5 feature metrics** — `subject_mention`, `length_band`, `is_story`,
+  `not_degenerate` — for **`sft.pt` and `dpo.pt` side by side, never averaged.** ADR-044 warns
+  Phase 7 not to assume the preference generalised; reporting one blended figure would bury
+  exactly that.
+* **Coherence:** `repeated_4gram_rate`, `max_repeat_run`, `oov_rate`, and `oov_plausibility`
+  **labelled dormant** — measured at n=2 OOV words in 45,031 (ADR-031, re-measured at eval
+  scale). A band with two observations is reported as unreadable, not as a pass.
+* **The `resolution` axis, labelled saturated** (ADR-038). It reports; it cannot gate, because a
+  saturated axis cannot discriminate.
+* Every artifact stamped with checkpoint, step, device, torch build, both eval-set hashes, and
+  the `eval` stage hash.
+
+### The `eval_iters` migration — needs explicit sign-off, because it moves a published hash
+
+ADR-020 promised `eval_iters` would leave `STAGE_FIELDS["train"]` "when Phase 7 introduces an
+eval stage", and deferred it because doing so "would move `train_stage_hash`, making `base.pt`
+look stale over a parameter that changes no weight."
+
+That cost is now concrete rather than hypothetical:
+
+```
+train stage, as recorded in base.pt (21 fields) : ad70960ceb21
+train stage, with eval_iters removed (20 fields): b95bcbb2f347
+model stage, unchanged either way               : 57fddccb6447
+```
+
+`train_stage_hash: ad70960ceb21` is recorded in `results/train_summary.json`, inside `base.pt`,
+and referenced by `sft.pt` as `base_train_stage_hash`. The **model** stage hash does not move,
+which is the reassurance that matters: the architecture fingerprint of the weights is untouched.
+
+**This is not done unilaterally.** ADR-042's rule is that a stage artifact's recorded hash is its
+provenance, and deliberately invalidating one — even correctly — is a decision, not a cleanup.
+Two options, and a recommendation:
+
+* **Migrate**, and record the mapping `ad70960ceb21 (pre-Phase-7 field list) → b95bcbb2f347` in
+  this ADR permanently, so a reader verifying `base.pt` can check either. Fixes the real defect:
+  today, editing a reporting knob makes the pretrained checkpoint look changed.
+* **Defer again**, keeping `base.pt`'s hash verifiable against a fresh computation, and accept
+  that `eval_iters` remains miscategorised.
+
+**Recommended: migrate.** The defect is live — anyone tuning `eval_iters` in Phase 7 would move
+`base.pt`'s recorded fingerprint for no reason — and a documented one-time mapping is cheaper
+than a permanent trap. But it changes a published artifact, so it waits for sign-off.
+
+### Still deliberately open
+
+The metrics above are the ones the project already has instruments for. **No new model bar is
+proposed**, per the reasoning at the top. If Phase 7 should certify a new claim about
+`nLemon-14` rather than reproduce and precision-bound the existing ones, that claim and its bar
+are a separate registration, agreed before the harness runs.

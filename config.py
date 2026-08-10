@@ -189,6 +189,14 @@ STAGE_EXEMPT: dict[str, str] = {
     "resolution_scan_docs": "metric construction; no weight depends on it",
     "resolution_markers": "metric construction",
     "resolution_min_marker_count": "metric construction",
+    # Phase 7 gate thresholds and registered hashes. Exempt on the standing rule
+    # that moving a bar must not make an artifact look changed - and the eval-set
+    # hashes are exempt for the same reason inverted: they are the thing that
+    # detects a changed artifact, so they must not themselves be an input to a
+    # stage fingerprint.
+    "eval_val_sha256": "registered hash; tamper-evidence, not an input",
+    "eval_heldout_sha256": "registered hash; tamper-evidence, not an input",
+    "eval_max_relative_se": "gate threshold",
 }
 
 
@@ -361,6 +369,22 @@ class Config:
     resolution_scan_docs: int = 200_000
     resolution_markers: int = 120
     resolution_min_marker_count: int = 50
+
+    # --- Phase 7: frozen evaluation sets (ADR-048) ----------------------------
+    # Registered hashes, cross-checked on every harness run by src/evalset.py.
+    # The eval set is the one thing an inconvenient metric could be quietly
+    # reselected against, and nothing in a scorecard would reveal it - so it is
+    # frozen exactly the way a bar is frozen, and a mismatch refuses rather than
+    # re-hashes. The artifacts themselves stay gitignored because both are
+    # regenerable from recorded inputs; the hash is the part that cannot be
+    # silently wrong.
+    eval_val_sha256: str = ("1becd214fbd573222b698921ebf18429"
+                            "789089dbfe91cfba162b08096c131035")
+    eval_heldout_sha256: str = ("b1ef0f7989a105272321dcb5c38508d1"
+                                "0f7f67d7c59b5880a18fd94da587eaa9")
+    # Precision bar for the scorecard headline, set from the eval set's SIZE - a
+    # design fact known before any model number exists, so it cannot be fitted.
+    eval_max_relative_se: float = 0.01
 
     # data
     dataset_name: str = "roneneldan/TinyStories"
