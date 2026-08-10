@@ -1897,3 +1897,107 @@ how far along it is" is a complete and acceptable answer; a guessed percentage i
 it is indistinguishable from a real one at the point where someone acts on it. Before a long job
 starts, the question is not "how fast is it" but **"how will I know how far it has got"** — and
 the answer has to be a file.
+
+## ADR-041 — The step-0 assertion passed in a mode training did not use
+
+**Status:** accepted. **Phase:** 6 (DPO). **Found:** during the first DPO run, before any gate
+was read. **Both defects below were fixed and committed before the Phase 6 result existed.**
+
+### The assertion that passed while the objective was wrong
+
+Phase 6's startup assertion is this phase's mask-assertion equivalent: policy and reference are
+both `sft.pt`, so every bracketed term in the DPO objective is zero and the loss must be exactly
+`-log(0.5)`. It ran, it printed `0.693147`, it passed at `1.9e-09`.
+
+Then the first logged training step came out at **0.804782**.
+
+The assertion ran under `policy.eval()`. The next line was `policy.train()`. **`dropout: 0.1`.**
+The reference logprobs are precomputed once in eval mode, so the moment training began, the
+policy's logprobs carried dropout noise the reference's did not — and the bracketed term was no
+longer a comparison of two evaluations of the same function. It was noise against a constant.
+
+*Diagnosed by contrast, not by inference.* Same weights, same batch, no optimiser step, only the
+mode flag changed:
+
+| mode | loss | spread over repeats |
+| --- | --- | --- |
+| `eval()` | 0.693147 (dev `1.9e-09`) | **exactly 0.0** — deterministic |
+| `train()` | 0.677 … 0.922 | **0.245** — stochastic |
+
+Zero variance with dropout off proves the weights match. A quarter-nat swing from nothing but
+the mode flag proves the excess is dropout, not a policy/reference mismatch — the two have
+opposite signatures, and a weight mismatch would have been *repeatable*.
+
+*And the magnitude closes exactly.* Per-pair logit sd at initialisation is **0.6723**. Taking
+the empirical expectation `E[-log sigma(x)]` over those logits gives **0.824300** against a
+measured **0.824299** — ratio 1.00. Dropout accounts for the entire excess; nothing else was
+going on.
+
+A remainder worth naming, because the first attempt to close it failed: the second-order
+approximation `log2 + Var/8` predicted only +0.0565 against +0.1312, off by 2.32x. Two reasons,
+and the first was my error. I had used the sd of the **batch-mean** logit (0.3741) where Jensen
+acts on **per-pair** logits — a factor of `sqrt(micro_batch)` wrong by construction. Even with
+the right sd, a quadratic Taylor term is invalid at sd 0.67. **The exact expectation is the
+right instrument here and the approximation is not**, which is the ADR-033 lesson in a new
+place: the convenient closed form was measuring something adjacent to the quantity of interest.
+
+*Why it matters beyond tidiness.* The per-pair noise sd was 0.67 at initialisation. The
+preference signal DPO is trying to learn is smaller than that. Training would have proceeded
+down a plausible-looking curve while the gradient was mostly noise — **ADR-014's exact shape,
+which this assertion was written to prevent, occurring in the assertion itself.**
+
+### The fix, and the half of it that generalises
+
+Dropout is now off for the entire DPO run: the policy stays in `eval()` mode throughout. The
+model has no batchnorm, so this disables dropout and changes nothing else, and eval mode is not
+`no_grad` — gradients still flow.
+
+But turning dropout off is the local fix. **The general fix is that the assertion now has two
+halves:**
+
+* **value** — the loss must equal `-log(0.5)`.
+* **determinism** — the same batch, twice, must give a **bit-identical** loss.
+
+A value check alone passes happily while the objective is stochastic, because dropout noise is
+zero-mean *inside the bracket*. Only repeatability separates "policy equals reference" from
+"policy equals reference **on average**". The second half is the one that would have caught
+this, and it is the one to carry into any future assertion of this kind.
+
+**The rule: an assertion must run in the configuration the thing being asserted about actually
+runs in.** An assertion evaluated under conditions training does not use is not an assertion
+about training. This one was off by a single line — `policy.train()` immediately after the
+check — and that line silently invalidated it.
+
+### A second defect found in the same run: warmup longer than the run
+
+`dpo_warmup_steps: 50`, in a run of **22 steps** (714 pairs / effective batch 32, one epoch).
+Linear warmup therefore reached `5e-7 * 22/50 = 2.2e-7` at the *final* step and averaged
+~1.15e-7. **The registered learning rate of 5e-7 was never once applied.** The value was carried
+over from a schedule measured in thousands of steps.
+
+This is ADR-028 and the `pref_prompts` correction in ADR-040 wearing a third face: *a
+configured number that the run's own structure makes unreachable, sitting in the config looking
+like a deliberate choice.* Three instances now, in three different phases. The pattern is not
+"someone picked a bad value" — it is that **a config value and the structure that consumes it
+are validated separately, so nobody checks the value against the structure.** Any schedule
+parameter expressed in steps should be asserted against the step count it will actually see.
+
+Corrected to 2, roughly 10% of the run, so 5e-7 is the operative rate for 20 of 22 steps — which
+is what ADR-039 registered.
+
+### On changing two things before reading the gate
+
+Both changes alter the treatment: one removes noise from the gradient, the other multiplies the
+effective learning rate by about 4x. The test from Phase 5 applies — *would I make this change if
+the gate had passed?* Yes to both, and neither is a judgement call: an objective that fails its
+own repeatability check is broken, and a warmup longer than its run is arithmetic, not taste.
+
+The protection is the ordering, and it is the only thing that makes this legitimate: **no gate
+had been read, no eval had been run, and no `dpo.pt` existed** — the first run was killed at step
+1 of 22 and wrote no checkpoint. This ADR and both fixes are committed **before** the Phase 6
+result is generated. Had either defect surfaced after a disappointing gate reading, the honest
+move would have been to report the RED first and the fix second, exactly as Phase 5 did.
+
+Post-fix, the curve confirms itself in band: step 1 logs **0.693147** — the objective now starts
+where it must under the conditions it trains under. (Ranking accuracy reads 0.000 at step 1
+because `logits > 0` is false at exactly zero; a perfect tie, correctly reported.)

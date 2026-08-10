@@ -318,7 +318,13 @@ dpo_lr: 5.0e-7
 dpo_epochs: 1
 dpo_micro_batch: 4          # two models resident, so half SFT's micro-batch
 dpo_grad_accum_steps: 8     # effective batch 32 pairs
-dpo_warmup_steps: 50
+# 2, not 50. The whole DPO run is 22 steps (714 pairs / effective batch 32, one
+# epoch), so a 50-step warmup would ramp to 2.2e-7 at the FINAL step and average
+# ~1.15e-7 - dpo_lr above would never once be the learning rate. 50 was copied
+# from a schedule measured in thousands of steps. This is ADR-028's family: a
+# value the run's own structure makes unreachable. 2 steps is ~10% of the run,
+# so 5e-7 is the operative rate for 20 of 22 steps, which is what was registered.
+dpo_warmup_steps: 2
 #
 # PRE-COMMITTED AMBER RESPONSE, because at 1.41x an amber is genuinely likely
 # and "what do we do then" must not be decided after seeing the number.

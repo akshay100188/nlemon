@@ -169,19 +169,43 @@ def train(cfg: Config) -> dict:
     print("precomputing reference logprobs (constants - the reference never moves)...")
     refs = reference_logprobs(ref, packed, cfg.dpo_micro_batch, dev.device)
 
-    # The startup assertion: policy == reference at step 0, so every bracketed
-    # term is zero and the loss must be exactly -log(0.5).
+    # DROPOUT IS OFF FOR THE WHOLE DPO RUN, and this is a correctness
+    # requirement rather than a tuning choice (ADR-041).
+    #
+    # The reference logprobs above were computed once, in eval mode. If the
+    # policy then ran in train mode, its logprobs would carry dropout noise the
+    # reference's do not, so the bracketed term would be noise-against-a-constant
+    # rather than a comparison of two evaluations of the same function. Measured
+    # on this model: per-pair logit sd 0.67 at initialisation, where the whole
+    # preference signal DPO is trying to learn is smaller than that.
+    #
+    # The model has no batchnorm, so eval mode disables dropout and changes
+    # nothing else. Gradients still flow - eval mode is not no_grad.
+    policy.eval()
+
+    # The startup assertion, in the mode training actually uses (ADR-041). It has
+    # two halves and the second is the one that would have caught the bug:
+    #   value       - policy == reference, so the loss must be exactly -log(0.5)
+    #   determinism - the same batch twice must give the SAME loss
+    # A value check alone passes happily while the objective is stochastic,
+    # because dropout noise is zero-mean in the bracket. Repeatability is what
+    # distinguishes "policy equals reference" from "policy equals reference on
+    # average".
     xb = torch.from_numpy(packed["chosen"][0][:cfg.dpo_micro_batch].astype(np.int64)).to(dev.device)
     yb = torch.from_numpy(packed["chosen"][1][:cfg.dpo_micro_batch].astype(np.int64)).to(dev.device)
     xr = torch.from_numpy(packed["rejected"][0][:cfg.dpo_micro_batch].astype(np.int64)).to(dev.device)
     yr = torch.from_numpy(packed["rejected"][1][:cfg.dpo_micro_batch].astype(np.int64)).to(dev.device)
-    policy.eval()
-    with torch.no_grad():
-        l0, acc0, m0 = dpo_loss(seq_logprob(policy, xb, yb),
-                                seq_logprob(policy, xr, yr),
-                                refs["chosen"][:cfg.dpo_micro_batch].to(dev.device),
-                                refs["rejected"][:cfg.dpo_micro_batch].to(dev.device),
-                                cfg.dpo_beta)
+
+    def _step0():
+        with torch.no_grad():
+            return dpo_loss(seq_logprob(policy, xb, yb),
+                            seq_logprob(policy, xr, yr),
+                            refs["chosen"][:cfg.dpo_micro_batch].to(dev.device),
+                            refs["rejected"][:cfg.dpo_micro_batch].to(dev.device),
+                            cfg.dpo_beta)
+
+    l0, acc0, m0 = _step0()
+    l0b, _, _ = _step0()
     expected = math.log(2)
     print(f"  step-0 loss {l0.item():.6f}  expected {expected:.6f} "
           f"(-log 0.5, because policy == reference)")
@@ -189,8 +213,15 @@ def train(cfg: Config) -> dict:
         raise SystemExit(
             f"DPO did not start at -log(0.5). Policy and reference disagree at "
             f"step 0, which means one of them is not sft.pt. Loss {l0.item():.6f}.")
-    print("  reference/policy identity assertion PASSED")
-    policy.train()
+    if l0.item() != l0b.item():
+        raise SystemExit(
+            f"DPO step-0 loss is not repeatable: {l0.item():.9f} then "
+            f"{l0b.item():.9f} on the SAME batch with the SAME weights. The "
+            f"objective is stochastic, so the policy is being compared against a "
+            f"reference computed under different conditions. Dropout left on in "
+            f"the policy is the usual cause (ADR-041).")
+    print(f"  reference/policy identity assertion PASSED "
+          f"(value exact to {abs(l0.item() - expected):.1e}, repeatable bit-for-bit)")
 
     opt = build_optimizer(policy, cfg)
     for g in opt.param_groups:

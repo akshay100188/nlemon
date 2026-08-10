@@ -1,0 +1,12 @@
+{
+  "pairs": 714,
+  "dropped": 0,
+  "steps": 22,
+  "beta": 0.1,
+  "lr": 5e-07,
+  "step0_loss": 0.693147,
+  "final_loss": 0.681542,
+  "final_accuracy": 0.78125,
+  "elapsed_s": 122.5,
+  "device": "cpu"
+}
