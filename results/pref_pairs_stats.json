@@ -1,0 +1,18 @@
+{
+  "pairs": 714,
+  "subjects": 293,
+  "chosen_words_mean": 141.901,
+  "rejected_words_mean": 141.637,
+  "length_diff": 0.263,
+  "mean_abs_gap": 5.109,
+  "welch_t": 0.2564,
+  "welch_p": 0.797607,
+  "length_parity_holds": true,
+  "is_story_chosen": 0.998599,
+  "is_story_rejected": 0.998599,
+  "chosen_occ_mean": 5.092,
+  "chosen_occ_min": 2,
+  "rejected_occ_mean": 0.0,
+  "rejected_occ_max": 0,
+  "preflight_pass": true
+}

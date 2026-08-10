@@ -296,7 +296,11 @@ dpo_gate_amber_z: 1.96
 # distribution it already samples instead of being pulled off it. 6 samples per
 # prompt gives a good chance of drawing both a faithful and an unfaithful one at
 # sft.pt's 70.8% mention rate.
-pref_prompts: 3000
+# 1240 is the real cap, not a chosen number: 310 train subjects x 4
+# templates = 1240 distinct prompts, and cmd_sample dedups on
+# (subject, prompt). Sampling one twice would draw more from an
+# identical distribution, so this is the prompt diversity that exists.
+pref_prompts: 1240
 pref_samples: 6
 # Chosen and rejected must land within this many words of each other, matched
 # AFTER the aboutness filter rather than before (ADR-039): a story genuinely

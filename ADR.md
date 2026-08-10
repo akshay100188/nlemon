@@ -1823,3 +1823,77 @@ held-out subjects never appear**. That is what keeps the Phase 6 number a genera
 claim rather than a memorisation one, the same standard as Phase 5, and it must not slip when
 the eval is built: held-out 78 are eval subjects, train 310 are pair subjects, and they do
 not cross.
+
+## ADR-040 — A long run was killed on two numbers I did not measure
+
+**Status:** accepted. **Phase:** 6 (preference-candidate sampling).
+
+Preference sampling needed 7,440 generations. `generate` runs at batch size 1, which held the
+GPU at ~35% utilisation and 370 MiB of a 4 GiB card. So batching was the right fix. It is not
+what this ADR is about.
+
+**What actually happened: I killed a running job on two figures, and neither was measured.**
+
+1. *"This will take 28 hours."* Extrapolated from the wall-clock of the Phase 5 scoring runs.
+   Those runs load the model, load the tokenizer, and score — and I divided the whole thing by
+   the generation count as though it were all generation. The real unbatched rate was
+   0.84 s/gen, which is **~4.2 hours**, not 28. I inflated the cost of continuing by 6.7x.
+2. *"It's roughly a quarter done."* This one was worse, because it was not an extrapolation at
+   all. **It was a guess presented in the same register as a measurement.** Python block-buffers
+   stdout when it is redirected to a file, so the log was empty and I had no progress data of
+   any kind. I had no way to know, and I said a number anyway.
+
+On those two figures the run was killed. It may have been nearly finished. **The root cause was
+never speed — it was that I could not see, and filled the gap with confident arithmetic instead
+of saying "I cannot tell."**
+
+**The fix is visibility, and it is deliberately redundant:**
+
+* `flush=True` on every progress line, so the log is live rather than block-buffered.
+* **`data/pref_samples_partial.json`, rewritten every N prompts with `{done, of, elapsed_min}`.**
+  Progress lands on disk in a parseable form, readable by anything, surviving any console.
+
+The redundancy paid for itself on the very next run. The relaunched job's task log came back
+**0 bytes despite `flush=True`** — the console capture failed the same way again. The on-disk
+checkpoint was the *only* reason progress was visible at all, and it is what the 66%-complete
+and rate readings were taken from. **The mechanism that was arguably belt-and-braces is the one
+that worked; the primary one failed twice.** Progress must be written to a file, not printed.
+
+**And the estimate was still wrong once, in a smaller way.** With visibility restored I read the
+first checkpoint — 50 prompts in 1.69 min — and projected ~42 min. The run took **63**. The
+first 50 were an unrepresentative burst; the rate between two later checkpoints was 19.2
+prompts/min against the early 29.6. The lesson is narrow and repeats ADR-023's shape: *an
+average taken over an early, small, unrepresentative slice is not a rate.* The second estimate,
+taken as a difference between two on-disk checkpoints, landed within 5 minutes of the truth.
+**Two points beat one point, even when one point is a measurement.**
+
+**On the batching itself, which is the easy half.** `generate_batch` keeps a separate
+`torch.Generator` per sequence, so sequence *i* always draws from *i*'s generator and batching
+changes only *when* forward passes happen, never which token is drawn. That is an identity
+claim, so it is asserted rather than argued: **8/8 sequences bit-identical to the unbatched
+path** before any pairs were built. Had it silently diverged, the pairs would have come from a
+different distribution than the gate measures — ADR-025's defect in a new location.
+
+Sequences that have emitted EOT keep being fed through the model to hold the tensor rectangular
+and keep drawing from their generators; everything after their EOT is discarded, which is what
+preserves the identity. All prompts in a batch must share a length: position embeddings are
+learned and indexed from zero, so left-padding would shift every position and change the input.
+Grouping by exact prompt length avoids padding rather than compensating for it.
+
+Measured sweep, not assumed: **B=8 optimal, B=16 slower, B=32 OOM.** There is no KV cache, so
+each step re-runs the full window and the arithmetic grows quadratically with batch — the
+sweet spot is low and had to be found by trying, not derived.
+
+**A separate correction, recorded because it was a bar that could not be cleared.**
+`pref_prompts` was configured at 2000. There are 310 train subjects and 4 templates, and
+`cmd_sample` dedups on `(subject, prompt)` — so **1240 distinct prompts is the entire
+population, and 2000 was unreachable.** Sampling to 2000 would have drawn repeats from an
+identical distribution and reported them as diversity. Corrected to 1240 with the derivation in
+the config comment. Same family as ADR-028: a number that the data was structurally incapable
+of reaching, sitting in the config looking like a choice.
+
+**The rule this installs.** A progress figure is a measurement or it is not said. "I don't know
+how far along it is" is a complete and acceptable answer; a guessed percentage is not, because
+it is indistinguishable from a real one at the point where someone acts on it. Before a long job
+starts, the question is not "how fast is it" but **"how will I know how far it has got"** — and
+the answer has to be a file.

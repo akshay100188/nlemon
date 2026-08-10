@@ -58,9 +58,11 @@ def cmd_sample(cfg: Config) -> None:
     Prompts are drawn from the training pairs, so every subject here is a train
     subject. Seeds are per (prompt, draw) so the whole set regenerates exactly.
     """
+    import time
+
     import torch
 
-    from src.sample import generate, load_checkpoint
+    from src.sample import generate_batch, load_checkpoint
     from src.tokenizer import load as load_tokenizer
     from utils.device import probe
     from utils.seed import set_seed
@@ -98,22 +100,41 @@ def cmd_sample(cfg: Config) -> None:
     eot = tok.token_to_id(cfg.doc_separator)
 
     out = []
+    # The k samples for one prompt share a prompt, so they share a token length
+    # and batch with no padding - which matters, because learned position
+    # embeddings are indexed from zero and left-padding would shift every
+    # position. Per-sequence generators keep each draw bit-identical to the
+    # unbatched path (asserted 8/8 before this was adopted); batching changes
+    # only when the forward passes happen.
+    started = time.time()
     for i, p in enumerate(picked):
         wire = p["prompt"] + "\n"
         ids = tok.encode(wire).ids
+        gens = [torch.Generator(device="cpu").manual_seed(cfg.seed + i * 97 + j)
+                for j in range(cfg.pref_samples)]
+        outs = generate_batch(model, [ids] * cfg.pref_samples,
+                              cfg.sft_gate_new_tokens, cfg.sft_gate_temperature,
+                              cfg.sft_gate_top_k or None, dev.device,
+                              eot_id=eot, generators=gens)
         cands = []
-        for j in range(cfg.pref_samples):
-            g = torch.Generator(device="cpu").manual_seed(cfg.seed + i * 97 + j)
-            gen = generate(model, ids, cfg.sft_gate_new_tokens,
-                           cfg.sft_gate_temperature, cfg.sft_gate_top_k or None,
-                           dev.device, eot_id=eot, generator=g)
-            full = tok.decode(gen)
+        for o in outs:
+            full = tok.decode(o)
             cands.append(full[len(wire):] if full.startswith(wire)
                          else full[len(p["prompt"]):])
         out.append({"subject": p["subject"], "prompt": p["prompt"],
                     "candidates": cands})
-        if (i + 1) % 100 == 0:
-            print(f"  {i + 1}/{len(picked)}")
+        if (i + 1) % 25 == 0:
+            el = time.time() - started
+            eta = el / (i + 1) * (len(picked) - i - 1) / 60
+            print(f"  {i + 1}/{len(picked)}  {el/60:.1f} min elapsed, "
+                  f"{eta:.1f} min left", flush=True)
+            # Progress on disk every 25 prompts. The 7-hour run that got stopped
+            # had written nothing at all, so "how far did it get" was
+            # unanswerable - which is exactly how a guess got reported as an
+            # estimate. Visibility is the fix; speed was only the symptom.
+            write_json(REPO_ROOT / cfg.data_dir / "pref_samples_partial.json",
+                       {"done": i + 1, "of": len(picked),
+                        "elapsed_min": round(el / 60, 2)})
 
     write_json(REPO_ROOT / cfg.data_dir / "pref_samples.json", out)
     print(f"wrote {REPO_ROOT / cfg.data_dir / 'pref_samples.json'}")

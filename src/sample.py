@@ -47,6 +47,71 @@ def load_checkpoint(path: Path, device: torch.device) -> tuple[GPT, dict]:
 
 
 @torch.no_grad()
+def generate_batch(model: GPT, id_lists: list[list[int]], max_new_tokens: int,
+                   temperature: float, top_k: int | None, device: torch.device,
+                   eot_id: int | None = None,
+                   generators: list[torch.Generator] | None = None
+                   ) -> list[list[int]]:
+    """`generate` for many sequences at once. Same draws, one forward pass.
+
+    `generate` runs at batch size 1, which is fine for a 16-sample gallery and
+    ruinous for 18,000: the GPU sits at ~35% utilisation and 370 MiB of a 4 GiB
+    card, and Phase 6's preference sampling was projected at 28 hours before this
+    existed.
+
+    **Every sequence keeps its own generator, so the samples are bit-identical to
+    the unbatched path.** Batching changes when forward passes happen, never
+    which token is drawn: sequence `i` always draws from `generators[i]`, whose
+    state evolves exactly as it would have alone. A sequence that has already
+    emitted EOT keeps being fed through the model to hold the tensor rectangular,
+    and keeps drawing from its generator, but nothing it produces after that
+    point is kept - so the draws that *are* kept match unbatched exactly.
+
+    All `id_lists` must share a length. Learned position embeddings are indexed
+    from zero, so left-padding would shift every position and silently change the
+    model's input; grouping by exact prompt length avoids padding entirely.
+    """
+    lengths = {len(x) for x in id_lists}
+    if len(lengths) != 1:
+        raise ValueError(f"generate_batch needs equal-length prompts, got {lengths}")
+    b = len(id_lists)
+    out = torch.tensor(id_lists, dtype=torch.long, device=device)
+    kept = [list(x) for x in id_lists]
+    done = [False] * b
+
+    for _ in range(max_new_tokens):
+        window = out[:, -model.cfg.context_len:]
+        logits, _ = model(window)
+        logits = logits[:, -1, :]
+        if temperature <= 0:
+            nxt = torch.argmax(logits, dim=-1).cpu()
+        else:
+            logits = logits / temperature
+            if top_k:
+                k = min(top_k, logits.size(-1))
+                kth = torch.topk(logits, k, dim=-1).values[:, -1:]
+                logits = logits.masked_fill(logits < kth, float("-inf"))
+            probs = F.softmax(logits, dim=-1).float().cpu()
+            nxt = torch.tensor([
+                int(torch.multinomial(
+                    probs[i], 1,
+                    generator=None if generators is None else generators[i]).item())
+                for i in range(b)])
+        for i in range(b):
+            if done[i]:
+                continue
+            t = int(nxt[i])
+            if eot_id is not None and t == eot_id:
+                done[i] = True
+            else:
+                kept[i].append(t)
+        if all(done):
+            break
+        out = torch.cat([out, nxt.to(device).unsqueeze(1)], dim=1)
+    return kept
+
+
+@torch.no_grad()
 def generate(model: GPT, ids: list[int], max_new_tokens: int, temperature: float,
              top_k: int | None, device: torch.device, eot_id: int | None = None,
              generator: torch.Generator | None = None) -> list[int]:

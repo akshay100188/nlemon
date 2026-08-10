@@ -317,7 +317,8 @@ class Config:
     dpo_gate_subject_mention_min: float = 0.833
     dpo_gate_amber_z: float = 1.96
     # Preference-pair construction (ADR-039). Train subjects only.
-    pref_prompts: int = 3000
+    # 310 train subjects x 4 templates; more would be duplicates.
+    pref_prompts: int = 1240
     pref_samples: int = 6
     pref_max_length_gap: int = 15
     # DPO training (ADR-039). lr far below SFT's: DPO re-ranks, it does not teach.
