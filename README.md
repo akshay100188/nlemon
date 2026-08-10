@@ -117,6 +117,24 @@ defective run was killed at step 1 and wrote nothing.
 Per the pre-committed response, the phase is **not extended**: no extra epochs, no higher LR, no
 more pairs, no third attempt at a lower bar ([ADR-032](ADR.md), [ADR-043](ADR.md)).
 
+### Parked experiments
+
+Questions this project measured the edge of but did not answer. They are **parked, not owed** —
+each is a fresh experiment with its own pre-registration, not debt against the phase that raised
+it. The standing test for whether one may be started: *would it be built if the phase that
+raised it had gone green?* If no, it is outcome-triggered and stays parked.
+
+**P1 — Does DPO transfer to unseen subjects when run to accuracy-convergence?** Phase 6 stopped
+deliberately at one epoch, with pair-ranking accuracy flat but margin still climbing, and
+transferred +3.5pt to 78 unseen subjects. Two separable factors are confounded in that number
+and neither was varied: *training length* (would running to accuracy-convergence rather than
+stopping conservatively move transfer, or only sharpen margin?) and *subject coverage* (would
+pairs spanning more than 293 subjects move it?). Pre-statable hypothesis: if the sign/magnitude
+split in [ADR-044](ADR.md) is the right mechanism, extending training should move margin and
+**not** transfer, while broadening subject coverage should move transfer. That is a genuine
+two-armed experiment with an outcome that can embarrass the hypothesis, which is what makes it
+worth registering rather than assuming.
+
 ---
 
 ## The model

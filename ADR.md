@@ -2334,3 +2334,47 @@ A gate that is allowed to fail is only meaningful if some of its failures are in
 than fatal. Until Phase 6 this project had produced exactly one RED, and it was a defect. Phase 6
 produced the first RED that is a **finding** — and the stop-condition rule predated the
 possibility. The rule is amended to admit it, and the amended rule is then applied.
+
+## ADR-046 — Assert the environment, don't infer it (a Phase 7 pre-commitment)
+
+**Status:** accepted, as a constraint on Phase 7 before Phase 7 is scoped.
+
+`results/dpo_train_summary.json` records `"device": "cpu"`. The DPO run trained on CPU, with two
+models resident against a 4 GiB card. For 22 steps at 2 minutes this cost nothing and changed no
+result — the run is deterministic and reproducible either way, and the checkpoint was verified
+bit-identical across two executions.
+
+It is recorded because of what it is an instance of, not what it cost.
+
+**The pattern, now on its fourth appearance.** Three times this project has been bitten by a
+configured value that the surrounding structure made unreachable, each time silently:
+
+* **ADR-028** — a 200-token generation cap made the length band's upper edge unreachable, turning
+  `is_story` into a truncation detector.
+* **ADR-040** — `pref_prompts: 2000` against a population of 1,240 distinct prompts.
+* **ADR-041** — `dpo_warmup_steps: 50` in a 22-step run, so the registered LR was never applied.
+
+A silent device fallback is the same defect with the environment in the role of the config: the
+run *registers* one thing and *executes* another, nothing raises, and the discrepancy is
+discoverable only by reading an artifact afterwards. Here it was benign. In Phase 7 it would not
+be — an eval harness that silently drops to CPU does not just run slowly, it changes what is
+feasible to measure within a session, which quietly shapes the eval that gets built.
+
+**The pre-commitment, registered before the harness exists.** Phase 7 must:
+
+1. **Assert its device rather than infer it.** The harness declares the device it requires and
+   fails loudly if `probe()` returns something else. A fallback is a decision, so it must be an
+   explicit one — `--allow-cpu` or equivalent — never a default.
+2. **Record the device it actually used in every artifact it writes**, as the DPO summary did.
+   That is the only reason this was findable at all.
+3. **Extend the same check to any schedule or budget parameter expressed in steps, batches, or
+   counts** — asserted against the structure that will consume it, per ADR-041's rule.
+
+**The general form, which is the point.** The recurring failure is not "someone chose a bad
+value". It is that **a declared intention and the structure that executes it are validated
+separately, so nothing ever compares them.** Four instances across four phases is no longer a
+run of bad luck; it is a missing class of check. Anything registered — a threshold, a schedule,
+a device, a budget — should be asserted against the thing that will actually consume it, at the
+moment of consumption, and fail loud on mismatch.
+
+Check the artifact, don't trust the status.
