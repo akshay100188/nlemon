@@ -23,7 +23,7 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 | 3 | Architecture | ✅ done |
 | 4 | Pretraining | ✅ done |
 | 5 | SFT | 🟥 attempt #1 **RED** → 🟩 attempt #2 **green** ([why](results/sft_gate.md)) |
-| 6 | DPO | ⬜ not started |
+| 6 | DPO | 🟥 **RED** — target moved +3.5pt against a +12.5pt bar, below the 8.9pt the eval can resolve; no floor breached ([why](#phase-6-dpo-red)) |
 | 7 | Eval harness | ⬜ not started |
 | 8 | Public artifact | ⬜ not started |
 
@@ -53,6 +53,48 @@ below the bar). The *delta* of +23.1 points is decisive at 2.6× the floor — t
 demonstrably taught subject adherence — but the *margin over the bar* is not, and a rerun on
 another seed could land in amber. The amber band had been registered below the bar and not
 above it; [ADR-035](ADR.md) makes it two-sided.
+
+### Phase 6, DPO: RED
+
+**DPO did not move its target by an amount this eval can resolve.** The bar was registered
+before the pairs were built, in the fixed read order *side-condition → floors → delta*, with
+the headline read last ([ADR-039](ADR.md)):
+
+| step | | sft | dpo | threshold | |
+|---|---|---|---|---|---|
+| 1 | side-condition `subject_mention` | 70.8% | **74.4%** | ≥ 65.3% | **holds** — Phase 5 still certified |
+| 2 | floor `subject_mention` | 70.8% | 74.4% | ≥ 67.0% | green |
+| 2 | floor `length_band` | 92.9% | 92.6% | ≥ 91.2% | green |
+| 2 | floor `is_story` | 98.1% | 98.7% | ≥ 97.2% | green |
+| 2 | floor `not_degenerate` | 90.1% | 90.1% | ≥ 88.0% | green |
+| 3 | **delta** `subject_mention` | 70.8% | **74.4%** | **≥ 83.3%** | **RED** |
+
+**Nothing was traded.** Every floor held and Phase 5's certification survives — the registered
+worry that DPO would spend Phase 5's 5.5-point grazing margin buying reward did not happen. It
+spent nothing because it did little.
+
+**The verdict turned on one prompt, and that is recorded rather than used.** `subject_mention`
+is 232/312; the AMBER− threshold is 0.744665, so 232 is RED and 233 would have been AMBER−. The
+miss is 0.11pt where one prompt is worth 0.32pt — a third of a single observation — and the
+threshold falls in a gap between attainable scores. **The verdict does not move**: the rule was
+registered before the pairs existed and 232/312 is RED under it. But the label is also not where
+the information is. At 233/312 the delta would be +3.8pt instead of +3.5pt, against a +12.5pt
+bar and an **8.9pt detection floor**. Both readings say the same thing, so the honest headline
+is not "RED by a hair" — it is *+3.5pt against a bar of +12.5, below what the eval resolves.*
+
+**The RED is informative, not an execution failure.** [ADR-039](ADR.md) argued DPO cannot *teach*
+subject-adherence because `sft.pt` already has it — DPO can only re-rank samples already in the
+distribution — and anchored the bar at 44% of remaining headroom while flagging that anchor at
+the time as *"the optimistic edge rather than a neutral estimate."* That caveat is now a
+measurement: **re-ranking bought about a quarter of what teaching bought on the same metric.**
+
+**The sharpest number is the transfer gap.** Ranking accuracy on the 714 training pairs reached
+**78.1%** from a 50% start — the preference was learned thoroughly — while held-out
+`subject_mention` moved +3.5pt. *The preference was learned and did not generalise* to subjects
+the pairs never named. That is a more useful finding than the verdict.
+
+Per the pre-committed response, the phase is **not extended**: no extra epochs, no higher LR, no
+more pairs, no third attempt at a lower bar ([ADR-032](ADR.md), [ADR-043](ADR.md)).
 
 ---
 
