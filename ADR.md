@@ -2069,3 +2069,105 @@ stages. A single global hash cannot express that; it is exactly what stage hashe
 Phase 6 stage did not disturb Phase 5's provenance.
 
 New stage hash: `dpo = d641cf06e7ea`.
+
+## ADR-043 — Phase 6 is RED, and the label turned on one prompt out of 312
+
+**Status:** accepted. **Phase:** 6 (DPO). **Verdict: RED.** Read in the registered order.
+
+### The result
+
+| step | metric | sft | dpo | threshold | verdict |
+| --- | --- | --- | --- | --- | --- |
+| 1. side-condition | subject_mention | 70.8% | **74.4%** | >= 65.3% | **HOLDS** |
+| 2. floor | subject_mention | 70.8% | 74.4% | >= 67.0% | GREEN |
+| 2. floor | length_band | 92.9% | 92.6% | >= 91.2% | GREEN |
+| 2. floor | is_story | 98.1% | 98.7% | >= 97.2% | GREEN |
+| 2. floor | not_degenerate | 90.1% | 90.1% | >= 88.0% | GREEN |
+| 3. delta | subject_mention | 70.8% | **74.4%** | >= 83.3% | **RED** |
+
+Shuffled control 1.6% against a 6.0% ceiling; above-chance 72.8%, up from 68.9%. Validity OK.
+
+**Phase 5's certification survives intact, and no floor was breached.** DPO bought nothing at
+anyone else's expense — `length_band` moved -0.3pt, `not_degenerate` moved 0.0pt, `is_story`
+improved. The pre-registered fear that DPO would spend Phase 5's 5.5-point grazing margin did
+not materialise. It spent nothing because it did nothing much.
+
+### The one-prompt boundary, stated before anything else
+
+`subject_mention` on dpo.pt is **232 of 312**. The AMBER- threshold is 0.744665.
+
+```
+231/312 = 0.740385  RED
+232/312 = 0.743590  RED      <- measured
+233/312 = 0.746795  AMBER-
+```
+
+**One prompt separates RED from AMBER-.** The shortfall is 0.1075pt where a single prompt is
+worth 0.321pt, so the miss is about *one third of one observation*. The threshold does not even
+land on an attainable value: no possible score lies between 74.359% and 74.680%, so 0.744665
+sits inside a gap the eval cannot express.
+
+**The verdict does not move.** The rule was registered before the pairs were built, 232 is what
+was measured, and 232/312 is RED under it. Recording this margin is not a step toward relabelling
+it — a bar the data misses is not converted into an amber by noticing the miss was narrow. That
+is the exact laundering move ADR-032 named and this project has refused twice already.
+
+**But the label is not where the information is, and that is the real point.** Ask what changes
+if the coin had landed the other way: at 233/312 the delta is +3.8pt instead of +3.5pt, against a
+registered bar of +12.5pt and a **detection floor of 8.9pt**. Both readings say the same thing —
+*DPO's improvement on its target is smaller than this eval can resolve from zero.* RED and
+AMBER- are two names for one finding here, and arguing about which name applies would be
+spending attention on the least informative digit in the table.
+
+So the honest headline is not "RED by a hair". It is: **DPO moved subject_mention by +3.5pt
+against a +12.5pt bar, and +3.5pt is below the 8.9pt this eval can resolve.**
+
+### What the RED actually says
+
+*It is not an execution failure, and the phase's own registration predicted its shape.* ADR-039
+argued DPO cannot teach subject-adherence because `sft.pt` already has it — DPO can only shift
+weight toward the subject-faithful samples already in the distribution, and the ceiling on that
+is bounded by what is there to re-rank. The bar was anchored at 44% of remaining headroom
+because Phase 5's SFT closed 44% of its headroom **by teaching**, and the registration flagged
+that anchor at the time as *"the OPTIMISTIC edge rather than a neutral estimate"*.
+
+That caveat is now a measurement. Re-ranking bought roughly a quarter of what teaching bought on
+the same metric. **The registered +12.5 asked re-ranking to do a fraction of teaching's job and
+it could not** — which is precisely the failure mode ADR-039 said a bar of +17.8 would have
+produced, occurring at +12.5 instead. The multiple was lowered from 2.0x to 1.41x for this
+reason and it was still too high.
+
+*The train/held-out gap is the sharpest number in the run.* Ranking accuracy on the training
+pairs reached **78.1%** from a 50% start — DPO learned the preference it was shown, thoroughly.
+Held-out `subject_mention` moved +3.5pt. **The preference was learned and did not transfer.**
+714 pairs over 293 train subjects taught the model to rank *those* subjects' faithful samples
+above their unfaithful ones, and that did not become a general disposition toward whatever
+subject a prompt names. That is a more interesting finding than the gate verdict, and Phase 7
+should not assume otherwise.
+
+### Registered response: do not extend
+
+ADR-039 pre-committed the amber responses and both ended in *do not extend*, on the reasoning
+that DPO past its useful point sharpens toward the preference signal until it trades every other
+property against it. A RED delta with all floors green sits below both amber cases, so the same
+answer applies with more force, not less: **more DPO is the move that converts a weak result
+into a broken one.**
+
+Specifically ruled out, and named so it cannot creep back in later:
+
+* **more epochs or a higher LR** — this is "run it until the number moves", the extension the
+  registration forbade before the number existed.
+* **more pairs** — the constraint measured here is transfer, not pair count. 714 pairs already
+  produced 78.1% training accuracy; the model learned what it was shown.
+* **a third attempt with a lower bar** — ADR-032 settled this. Phase 5's RED stood and was
+  published alongside attempt #2; Phase 6's RED stands as the phase's result.
+
+### Threshold placement, for future phases
+
+The AMBER- threshold fell between two attainable scores. With n = 312 the eval is quantised to
+0.321pt, and any threshold derived from a continuous SE calculation will generically land in a
+gap. This costs nothing when a result is far from a boundary and decides the label when it is
+not. Future zone boundaries should be **reported against the attainable values that bracket
+them** — "RED at <= 232/312, AMBER- at >= 233/312" is checkable in a way that "AMBER- >= 74.5%"
+is not, and it makes a one-observation margin visible in the registration rather than only in
+the post-mortem.

@@ -1,0 +1,100 @@
+{
+  "verdict": "RED",
+  "note": "DPO did not move its target by a resolvable amount.",
+  "read_order": [
+    "side_condition",
+    "floors",
+    "delta"
+  ],
+  "side_condition": {
+    "metric": "subject_mention",
+    "bar": 0.653,
+    "dpo": 0.74359,
+    "holds": true,
+    "false_breach_rate": 0.1106
+  },
+  "floors": {
+    "subject_mention": {
+      "sft": 0.708333,
+      "dpo": 0.74359,
+      "change": 0.035257,
+      "green_floor": 0.670242,
+      "red_floor": 0.633915,
+      "state": "GREEN",
+      "n_eff": 201.9,
+      "icc": 0.1818,
+      "se": 0.045239,
+      "rule": "sft 70.8% - 0.842 x SE 4.52% = 67.0%"
+    },
+    "length_band": {
+      "sft": 0.929487,
+      "dpo": 0.926282,
+      "change": -0.003205,
+      "green_floor": 0.911586,
+      "red_floor": 0.894514,
+      "state": "GREEN",
+      "n_eff": 290.0,
+      "icc": 0.0253,
+      "se": 0.02126,
+      "rule": "sft 92.9% - 0.842 x SE 2.13% = 91.2%"
+    },
+    "is_story": {
+      "sft": 0.980769,
+      "dpo": 0.987179,
+      "change": 0.00641,
+      "green_floor": 0.971511,
+      "red_floor": 0.962681,
+      "state": "GREEN",
+      "n_eff": 312.0,
+      "icc": 0.0,
+      "se": 0.010996,
+      "rule": "sft 98.1% - 0.842 x SE 1.10% = 97.2%"
+    },
+    "not_degenerate": {
+      "sft": 0.900641,
+      "dpo": 0.900641,
+      "change": 0.0,
+      "green_floor": 0.880475,
+      "red_floor": 0.861242,
+      "state": "GREEN",
+      "n_eff": 312.0,
+      "icc": 0.0,
+      "se": 0.023951,
+      "rule": "sft 90.1% - 0.842 x SE 2.40% = 88.0%"
+    }
+  },
+  "floors_state": "GREEN",
+  "delta": {
+    "sft": 0.708333,
+    "bar": 0.833333,
+    "se": 0.045239,
+    "detection_floor": 0.088668,
+    "green_at": 0.922001,
+    "amber_minus_at": 0.744665,
+    "multiple": 1.41,
+    "rule": "sft 70.8% + delta 12.5%",
+    "dpo": 0.74359,
+    "state": "RED"
+  },
+  "validity": {
+    "shuffled": 0.016026,
+    "max": 0.06,
+    "ok": true
+  },
+  "decoding": {
+    "temperature": 0.8,
+    "top_k": 40,
+    "new_tokens": 245
+  },
+  "n": 312,
+  "length_band": [
+    103,
+    190
+  ],
+  "mean_words": {
+    "sft": 144.33,
+    "dpo": 146.15
+  },
+  "dpo_stage_hash": "d641cf06e7ea",
+  "sft_stage_hash": "ecad1e4b412d"
+}
