@@ -7,6 +7,12 @@
     "top_k": 40,
     "new_tokens": 245
   },
+  "device": {
+    "type": "cuda",
+    "name": "NVIDIA GeForce RTX 3050 A Laptop GPU",
+    "torch": "2.12.1+cu130",
+    "cuda_available": true
+  },
   "length_band": [
     103,
     190

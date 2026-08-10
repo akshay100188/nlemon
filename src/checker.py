@@ -778,13 +778,18 @@ def cmd_dpo_gate(cfg: Config) -> None:
     if sft["length_band"] != dpo["length_band"]:
         raise SystemExit("length band differs between the two scorings")
 
-    # DEVICE PARITY (ADR-047). This gate was read once across a GPU-scored sft
-    # and a CPU-scored dpo, and the delta it reported was uninterpretable as a
-    # result: different precision means different logits, different draws, and
-    # ~half the responses change from the device alone. The decoding check above
-    # existed because "comparing two stages under different decoding measures the
-    # decoder, not the fine-tune" - the identical argument applies to the device,
-    # and it was missing.
+    # DEVICE PARITY (ADR-047). This gate was once read across a GPU-scored sft and
+    # a CPU-scored dpo. The audit measured that effect at EXACTLY ZERO - 0 of 312
+    # responses differ - because `generate` uses no autocast, so both paths are
+    # fp32 and the only disagreement is matmul reassociation at ~1e-7, which
+    # predicts 0.006 flipped draws across the eval.
+    #
+    # The guard exists anyway, and that is the point: the comparison was saved by
+    # numerical luck, not by design. Enable autocast, widen the model, or raise
+    # the temperature and the same mistake corrupts a published number silently.
+    # The decoding check above exists because "comparing two stages under
+    # different decoding measures the decoder, not the fine-tune" - the identical
+    # argument applies to the device, and it was simply never generalised.
     for side, art in (("sft", sft), ("dpo", dpo)):
         if "device" not in art:
             raise SystemExit(
@@ -795,10 +800,12 @@ def cmd_dpo_gate(cfg: Config) -> None:
         raise SystemExit(
             f"DEVICE MISMATCH - refusing to compare:\n"
             f"  sft {sft['device']}\n  dpo {dpo['device']}\n"
-            f"Sampling draws are seed-pinned but the logits are not: CUDA-bf16 "
-            f"and CPU-fp32 assign different probabilities, so the multinomial "
-            f"picks differently and about half the responses change from the "
-            f"device alone. Re-score both on one device (ADR-047).")
+            f"Sampling draws are seed-pinned, but the logits are not - they come "
+            f"from the forward pass, so the device is part of the measurement. "
+            f"Measured on this model the effect was zero (ADR-047), but that was "
+            f"numerical luck at fp32 and ~1e-7, not a guarantee: it does not hold "
+            f"under autocast, a larger model, or a higher temperature. "
+            f"Re-score both on one device.")
 
     bars = derive_dpo_bars(cfg, sft)
     d = sft["decoding"]

@@ -27,6 +27,20 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 | 7 | Eval harness | ⬜ not started — proceeds on `sft.pt`; Phase 6 is RED-characterized, foundation intact |
 | 8 | Public artifact | ⬜ not started |
 
+**Phase-close checklist.** A phase is not closed until every line holds. Each exists because it
+once did not ([ADR-046](ADR.md)):
+
+1. Gate read in its registered order, bars recomputed from frozen config and cross-checked.
+2. Verdict committed with the result, including the losing attempt if there was one.
+3. **Environment asserted and recorded in every artifact** — device *and* torch build. A run that
+   did not declare its environment did not measure what it claims (instance 4).
+4. **The test suite actually executed**, not merely present. `python -m tests.test_residue`
+   (instance 6: a green that could not run because the runner was missing).
+5. **The project memory's stated phase matches the committed phase.** This is the record the
+   project would be rebuilt from if a session were lost, and no gate reads it — it said
+   "Phase 1 green" through Phases 5 and 6 (instance 5).
+6. Carried debt from prior phases explicitly closed or explicitly deferred, in writing.
+
 No phase starts until the previous phase's gate resolves. A gate is **green** (proceed),
 **RED-blocking** (the question is unanswered or the instrument is broken — stop and fix), or
 **RED-characterized** (the question is answered, the answer is negative or null, the mechanism is
@@ -62,15 +76,27 @@ above it; [ADR-035](ADR.md) makes it two-sided.
 
 ### Phase 6, DPO: RED
 
-> ⚠️ **The Phase 6 numbers below are under audit and should not be cited yet (2026-08-10).**
-> They were produced by comparing `sft.pt` scored on GPU against `dpo.pt` scored on **CPU** — the
-> DPO phase was accidentally run under the global CPU-only torch instead of this repo's cu130
-> venv. Sampling draws are seed-pinned, but the logits are not: CUDA-bf16 and CPU-fp32 assign
-> different probabilities, so ~half the responses differ from the device alone. **The `+3.5pt`
-> delta and the "nothing was traded" floors below are therefore not yet interpretable as DPO
-> effects.** A device-matched re-read is in progress and this section will be corrected with the
-> matched numbers. Phase 5's numbers are unaffected and verified — re-scoring `sft.pt` on GPU
-> reproduced its committed responses 312/312.
+> ✅ **Audited for a device confound and cleared — the numbers below stand (2026-08-10).**
+>
+> These numbers were originally produced by comparing `sft.pt` scored on GPU against `dpo.pt`
+> scored on **CPU**: the DPO phase was accidentally run under the global CPU-only torch instead of
+> this repo's cu130 venv, so the device was silently part of a cross-phase comparison
+> ([ADR-047](ADR.md)). Every checkpoint was re-scored device-matched under the venv and the gate
+> re-read in its registered order.
+>
+> **The device effect measured exactly zero** — `dpo.pt` scored on CPU and on GPU produced **0 of
+> 312 differing responses**, and every metric matched to four decimals. All 154 changed responses
+> (49.4%) between `sft` and `dpo` are DPO, none are precision. The published values are unchanged
+> and now verified: `+3.5` / `−0.3` / `+0.6` / `+0.0`, RED, floors green. Phase 5 was re-derived
+> too and reproduced **312/312** responses, so its committed artifact gained provenance without a
+> single value moving.
+>
+> The zero is explained, not just observed: `generate` uses **no autocast**, so both paths run
+> fp32 and the only disagreement is matmul reassociation at ~1e-7 — which predicts 0.006 flipped
+> draws across ~55,769 token draws. **The comparison was saved by numerical luck, not by design**,
+> so the gate now refuses cross-device comparisons outright and the harness asserts its device.
+> This audit is reported rather than buried: "it was questioned and measured at zero" is a
+> stronger claim than a number that was never checked.
 
 **DPO did not move its target by an amount this eval can resolve.** The bar was registered
 before the pairs were built, in the fixed read order *side-condition → floors → delta*, with

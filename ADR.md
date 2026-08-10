@@ -2338,21 +2338,64 @@ possibility. The rule is amended to admit it, and the amended rule is then appli
 ## ADR-046 — Assert the environment, don't infer it (a Phase 7 pre-commitment)
 
 **Status:** accepted, as a constraint on Phase 7 before Phase 7 is scoped.
+**Corrected 2026-08-10 — see the correction notice immediately below, then [ADR-047](#adr-047).**
 
-`results/dpo_train_summary.json` records `"device": "cpu"`. The DPO run trained on CPU, with two
-models resident against a 4 GiB card. For 22 steps at 2 minutes this cost nothing and changed no
-result — the run is deterministic and reproducible either way, and the checkpoint was verified
-bit-identical across two executions.
+> ### ⚠️ Correction: this ADR originally shipped with an inferred example
+>
+> The paragraph below first read: *"The DPO run trained on CPU, with two models resident against
+> a 4 GiB card."* **That explanation was wrong, and it was never checked.** It was a
+> plausible-sounding mechanism invented to account for an observation.
+>
+> The real cause: **Phase 6 was run under the global CPU-only torch (`2.12.1+cpu`) instead of
+> this repo's venv (`2.12.1+cu130`)** — an environment error the project memory explicitly warns
+> about. A `+cpu` build reports no CUDA device whatever hardware is present, so card capacity had
+> nothing to do with it. It was found by re-scoring under the venv, not by reasoning.
+>
+> **This is the pattern executing inside the ADR written to stop it.** An ADR whose thesis is
+> *assert the environment, don't infer it* shipped with an inferred environment as its motivating
+> example. That is the sharpest available demonstration that stating a rule is not the same as
+> following it, and it is left visible here rather than quietly rewritten.
+>
+> A second inference in the same area was also wrong and is corrected in ADR-047: the claim that
+> the confound worked through "CUDA-bf16 vs CPU-fp32" probabilities. `generate` uses **no
+> autocast**, so both paths are fp32; the real device dependence is fp32 matmul reassociation at
+> ~1e-7, which predicts 0.006 flipped draws across the eval and produced exactly zero. Two
+> invented mechanisms, one after the other, both delivered in the confident register of a
+> measurement. **The failure is not the wrong device — it is the habit of explaining an
+> observation instead of instrumenting it.**
+
+`results/dpo_train_summary.json` records `"device": "cpu"`. The DPO run trained on CPU because it
+was launched under the wrong interpreter. For 22 steps at 2 minutes the cost was nil and the run
+itself is sound — deterministic, reproducible, and verified bit-identical across two executions —
+but it silently made the device part of a cross-phase comparison, which is the subject of
+ADR-047.
 
 It is recorded because of what it is an instance of, not what it cost.
 
-**The pattern, now on its fourth appearance.** Three times this project has been bitten by a
-configured value that the surrounding structure made unreachable, each time silently:
+**The pattern, now on its seventh appearance** (this list was written at four and grew twice
+while the ADR was being written, which is itself the finding). Each time, a declared value or
+state that the surrounding structure made unreachable or untrue, silently:
 
 * **ADR-028** — a 200-token generation cap made the length band's upper edge unreachable, turning
   `is_story` into a truncation detector.
 * **ADR-040** — `pref_prompts: 2000` against a population of 1,240 distinct prompts.
 * **ADR-041** — `dpo_warmup_steps: 50` in a 22-step run, so the registered LR was never applied.
+* **4 — the interpreter** ([ADR-047](#adr-047)). The whole of Phase 6 ran on a CPU-only torch
+  while every prior phase ran on the venv's CUDA build. Nothing asked, so nothing raised.
+* **5 — the project memory.** It stated "Phase 1 green" through the entirety of Phases 5 and 6.
+  A declared state and the committed state, validated separately, nothing comparing them — and
+  **this is the most dangerous instance in the list, because it is the record the project would
+  be rebuilt from if a session were lost, and no gate reads it.** Closed by a phase-close
+  checklist step: *a phase is not closed until the memory's stated phase matches the committed
+  phase.*
+* **6 — the RESIDUE test's green was never executed.** `tests/test_residue.py` existed and was
+  believed passing for four phases, but `pytest` was absent from the interpreter in use, so the
+  suite could not run at all. It is a standalone script (`python -m tests.test_residue`) and does
+  pass — 10 fixtures, 400 permutations, 9 non-overlapping rules, confirmed under the venv. **A
+  test that cannot run is not a passing test, and "we have a test for that" is a claim about the
+  runner as much as the code.**
+* **7 — this ADR's own example**, above. The rule was stated and then not applied to the sentence
+  stating it.
 
 A silent device fallback is the same defect with the environment in the role of the config: the
 run *registers* one thing and *executes* another, nothing raises, and the discrepancy is
@@ -2372,7 +2415,7 @@ feasible to measure within a session, which quietly shapes the eval that gets bu
 
 **The general form, which is the point.** The recurring failure is not "someone chose a bad
 value". It is that **a declared intention and the structure that executes it are validated
-separately, so nothing ever compares them.** Four instances across four phases is no longer a
+separately, so nothing ever compares them.** Seven instances across four phases is no longer a
 run of bad luck; it is a missing class of check. Anything registered — a threshold, a schedule,
 a device, a budget — should be asserted against the thing that will actually consume it, at the
 moment of consumption, and fail loud on mismatch.
@@ -2457,3 +2500,176 @@ If the pure device effect is comparable in size to the pure DPO effect, then the
 of Phase 6 is not merely that DPO did little, but that **at this scale of weight change a
 precision difference and a training intervention are the same size** — which is a sharper
 statement about how small the intervention was than the delta alone conveys.
+
+### The result: case A — verdict holds, finding holds
+
+Read device-matched, both artifacts recording `cuda / torch 2.12.1+cu130`, in the registered
+order. **Every published value reproduces unchanged.**
+
+| | sft | dpo | threshold | |
+|---|---|---|---|---|
+| side-condition `subject_mention` | 70.8% | 74.4% | ≥ 65.3% | HOLDS |
+| floor `subject_mention` | 70.8% | 74.4% (+3.5pt) | ≥ 67.0% | GREEN |
+| floor `length_band` | 92.9% | 92.6% (−0.3pt) | ≥ 91.2% | GREEN |
+| floor `is_story` | 98.1% | 98.7% (+0.6pt) | ≥ 97.2% | GREEN |
+| floor `not_degenerate` | 90.1% | 90.1% (+0.0pt) | ≥ 88.0% | GREEN |
+| **delta** `subject_mention` | 70.8% | **74.4%** | **≥ 83.3%** | **RED** |
+
+Gate self-check passed: all five bars recomputed from their rules to within 0.0005 of frozen
+config, independently reproducing SE 4.52%, n_eff 201.9, an 8.9pt detection floor and the 1.41×
+multiple.
+
+**The decomposition, which is the actual result.**
+
+| comparison | responses differing / 312 |
+|---|---|
+| pure **device** — `dpo` on CPU vs `dpo` on GPU, identical weights | **0 (0.0%)** |
+| pure **DPO** — `sft` on GPU vs `dpo` on GPU, identical device | 154 (49.4%) |
+| the original confounded reading | 154 (49.4%) |
+
+The CPU-scored `dpo` artifact that this decomposition rests on is preserved in history at commit `2ae1701`; re-extracting it confirms 312/312 responses identical to the GPU re-score. It is cited rather than duplicated, so the audit is reproducible without carrying a second copy of a 319 KB artifact.
+
+**The device effect is exactly zero, and the reason is mechanical rather than fortunate-looking.**
+`generate` uses **no autocast**, so CUDA ran fp32 as well; the only device disagreement is matmul
+reassociation at ~1e-7. A draw flips only if the uniform lands within that distance of a
+cumulative boundary, so across ~55,769 token draws the expected flip count is **0.006**.
+Predicted zero, observed zero — the mechanism and the measurement agree.
+
+*This also corrects a second invented mechanism of mine.* The claim that the confound acted
+through "CUDA-bf16 versus CPU-fp32 probabilities" was wrong: there is no autocast anywhere in the
+generation path. Two fabricated explanations in a row, both delivered in the confident register
+of a measurement, is the finding that outlives the confound itself — see the correction notice on
+[ADR-046](#adr-046).
+
+**Why the guard ships even though the effect was nil.** The comparison was rescued by numerics,
+not by design. Enable autocast, widen the model, or raise the temperature and the identical
+mistake corrupts a published number in silence. So the gate now refuses cross-device comparisons,
+`score` asserts its device and exits non-zero, and **both refusals were verified firing rather
+than assumed**: the fieldless-artifact branch, the cuda-versus-cpu mismatch branch, and the CPU
+assertion itself (exit 1, no artifact written, error naming the venv as the fix).
+
+**One number that re-frames Phase 6 more sharply than the delta does.** DPO changed **49.4% of
+responses to move the target 3.5 points** — 21 flips toward the subject, 10 away, net +11. It was
+not inert; it rewrote half the eval set and bought almost nothing directional. A large amount of
+churn purchasing a near-null net gain is what re-ranking without generalisation looks like from
+the outside, and it is a better description of the phase than "+3.5pt" alone.
+
+## ADR-048 — Phase 7 scope: the eval harness, pre-registered before it exists
+
+**Status:** proposed, awaiting sign-off. **No harness code exists.** Committed first so the
+scorecard cannot be designed around what it turns out to say — the same discipline as every bar
+since Phase 5, applied to an instrument instead of a threshold.
+
+The motivating case is not hypothetical. Phase 6 was measured across two environments and nobody
+noticed until a memory note was read ([ADR-047](#adr-047)). The audit found the effect was
+exactly zero, so nothing was lost — **but it was zero by luck of the numerics, not by design.**
+Had `generate` used autocast, the same mistake would have silently corrupted a published result.
+Phase 7 is the phase that certifies what nLemon-14 *is*, so it is the wrong place to rely on
+luck.
+
+### 1. Model of record
+
+`sft.pt` is the evaluated model, certified twice: Phase 5's GREEN, and Phase 6's floors
+independently confirming DPO touched nothing. `dpo.pt` is evaluated **alongside**, as the
+characterized side-result described in [ADR-044](#adr-044) — never as the headline.
+
+**Every harness output names the checkpoint that produced it.** No aggregate is permitted to
+blend checkpoints or to say "the model" without qualification. A scorecard that cannot be traced
+to a checkpoint is a scorecard about nothing.
+
+### 2. Decoding: pinned, asserted, and seed-declared per metric
+
+Decoding is read from the harness's own config keys, never from a shared global default — the
+ADR-025 guard, carried forward, because a later phase changing a default must not silently
+re-run an eval at settings it was never registered against.
+
+**Two modes, and every metric must declare which it uses:**
+
+* **greedy** (`temperature = 0`) — bit-stable across runs, *not* representative of what the model
+  does in use. Correct for anything that must be identical run to run.
+* **sampled** at the pinned `0.8 / 40` — representative, and **only a gate if its seed is
+  pinned.** A sampled metric without a declared seed is a measurement of that afternoon, not a
+  gate, and the harness must refuse to label it one.
+
+The tension is real and is resolved by declaring rather than averaging: greedy is reproducible
+but unrepresentative, sampled is representative but needs seeding to be reproducible. Reporting
+one number that quietly mixes them would hide exactly that trade.
+
+### 3. Environment: asserted, recorded, fail-loud
+
+Per [ADR-046](#adr-046) and [ADR-047](#adr-047), and already implemented in `checker score`:
+
+* The harness declares the device it requires and **exits non-zero** if `probe()` disagrees.
+* CPU requires an explicit `--allow-cpu`; it is never a fallback.
+* Every artifact records `{type, name, torch, cuda_available}` — **`torch` included because the
+  device is the symptom and the interpreter is the cause.**
+* Any comparison across two artifacts **refuses** on environment mismatch, and refuses equally
+  loudly when an artifact predates the field, because then the environment is *unknown* rather
+  than fine.
+
+**Verification is part of the deliverable, not an implementation detail:** the assertion must be
+demonstrated firing on a forced CPU fallback, showing it fails loud rather than running quietly.
+A guard that has never been seen to fire is instance 6 of ADR-046's list wearing new clothes.
+
+### 4. What the harness is allowed to claim
+
+**It may claim:** `sft.pt`'s held-out performance on the 78 held-out subjects at pinned decoding,
+with `dpo.pt` reported beside it.
+
+**It may not:**
+
+* **Re-open any Phase 4/5/6 gate.** Those verdicts are frozen at their commits. Phase 6's RED
+  stands; Phase 5's grazing green stands with its caveat.
+* **Silently overwrite a recorded metric it recomputes.** If a recompute disagrees with a
+  recorded value, that disagreement is **a finding to surface**, not a number to replace. This is
+  the discipline that caught the Phase 4 coherence scope issue, and the audit above is what it
+  looks like when it works: the committed `sft` scores were re-derived, matched 312/312, and the
+  artifact gained provenance without a single value changing.
+* **Report a blended scalar.** Sub-scores stay separate, per the standing rule.
+
+### 5. Gate self-check
+
+The harness recomputes its own bars from frozen config and refuses to run if they disagree, with
+the same `derive_bars`/`derive_dpo_bars` machinery used since Phase 5. No new pattern is
+introduced. The effective-sample-size correction (ADR-033) applies to any clustered metric —
+prompts cluster by subject, and a bar priced on nominal `n` is too tight.
+
+### 6. Carried debt, each closed or explicitly deferred
+
+**Closed:**
+
+* **RESIDUE regression** — exists, and now verified *executed*: 10 fixtures, 400 permutations,
+  9 non-overlapping rules, PASS under the venv. It is a standalone script
+  (`python -m tests.test_residue`), not a pytest suite, which is why a missing `pytest` made it
+  look green while being unrunnable. Now a phase-close checklist item so the distinction between
+  "present" and "passing" cannot blur again.
+* **`oov_plausibility` at eval scale** — measured, and the answer is a deferral with a reason.
+  At 312 prompts / 45,031 words `sft.pt` produces **2 OOV words**; ADR-031 called it too thin at
+  n=3 on 200 prompts, and 56% more prompts moved it to n=2. **It cannot be a Phase 7 gate metric
+  on `sft.pt`** — the fine-tune does not invent words, so the band is structurally dormant and
+  the harness must report it as "too thin to read" rather than as a pass. `base.pt` still fails
+  it (`oov_rate` 0.004855 vs a 0.002114 ceiling, 44 distinct OOV words), and the words are
+  themselves evidence for the Phase 5 diagnosis: `mrite`/`arite`/`erite`/`orite`/`brite` are
+  corruptions of *write*, `tellow`/`telle`/`tellers` of *tell* — base mangling the instruction
+  verb back into the story.
+
+**To close in Phase 7:**
+
+* **`eval_iters` migrates out of `STAGE_FIELDS["train"]` into a new `eval` stage.** Promised in
+  ADR-020 and deferred because moving it then would have shifted `base.pt`'s recorded hash for no
+  real change. **Phase 7 introducing an eval stage is the condition that IOU named**, so it comes
+  due here — exactly as the `dpo` stage IOU came due in Phase 6.
+* **A large fixed evaluation set, not 100 random batches** (ADR-020). Reproducible-by-seed is not
+  the same as low-variance and a scorecard needs both; the harness must report the variance it
+  actually has, not just be re-runnable.
+* **The `resolution` axis** — measured saturated in ADR-038 and explicitly kept for this harness.
+  It reports, it does not gate: a saturated axis cannot discriminate.
+* **Phase 6's transfer finding is an input, not an assumption.** ADR-044 warns Phase 7 not to
+  assume the preference generalised. Any harness metric that would read differently on `dpo.pt`
+  than `sft.pt` must be reported for both rather than averaged.
+
+### Open for sign-off
+
+Metrics and bars are deliberately **not** proposed here. The scope fixes *what kind of thing*
+the harness may measure and claim; the specific sub-scores and their thresholds are a separate
+pre-registration, to be agreed before the harness is built and never after a number exists.
