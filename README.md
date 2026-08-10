@@ -24,7 +24,7 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 | 4 | Pretraining | ✅ done |
 | 5 | SFT | 🟥 attempt #1 **RED** → 🟩 attempt #2 **green** ([why](results/sft_gate.md)) |
 | 6 | DPO | 🟥 **RED** — target moved +3.5pt against a +12.5pt bar, below the 8.9pt the eval can resolve; no floor breached ([why](#phase-6-dpo-red)) |
-| 7 | Eval harness | ⬜ not started — proceeds on `sft.pt`; Phase 6 is RED-characterized, foundation intact |
+| 7 | Eval harness | 🟩 **green** — 5 gates: eval-set integrity, environment, determinism, recompute-vs-recorded, precision ([scorecard](results/phase7_scorecard.json)) |
 | 8 | Public artifact | ⬜ not started |
 
 **Phase-close checklist.** A phase is not closed until every line holds. Each exists because it
@@ -400,7 +400,17 @@ That stricter number is *worse* (5.4636 vs 5.1981) and it is the one the ratios 
 a headline should not rest on the friendlier of two measurements. The gap is sampling noise
 plus subset: at `eval_iters: 100` the estimate moves between 5.198 and 5.280 across loader
 seeds, and 5.1981 sat at the optimistic edge; the low-variance estimate over 4.1M tokens is
-5.2680. Every figure clears ≤ 8.0, so the verdict never depended on the choice — but Phase
+5.2680.
+
+**Phase 7 settled why, and how far off it was** ([ADR-051](ADR.md)). "Optimistic edge" was the
+right instinct with the wrong mechanism: `best_val_perplexity` is the **minimum over 40
+evaluations**, because training saves a checkpoint only when validation improves. That makes it an
+*order statistic* — biased low by construction and by a predictable amount, not merely unlucky. It
+sits at the **4.2 percentile** of its own estimator's sampling distribution. The Phase 7 harness
+scores the **entire** validation split, 4,682,459 tokens with no sampling error to be lucky in, and
+gets **5.2662 ± 0.27%** — confirming the 4.1M-token estimate of 5.2680 to within 0.03%. Treat
+**5.2662** as `nLemon-14-base`'s validation perplexity; every figure here still clears ≤ 8.0, so the
+verdict never depended on the choice. Every figure clears ≤ 8.0, so the verdict never depended on the choice — but Phase
 7's scorecard needs a large fixed evaluation set rather than 100 random batches, recorded
 as a requirement in
 [ADR-020](ADR.md#adr-020--the-gate-metric-was-underpowered-and-the-published-ratio-must-be-the-conservative-one).

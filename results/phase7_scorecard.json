@@ -1,0 +1,102 @@
+{
+  "verdict": "GREEN",
+  "gates": {
+    "G1_eval_set_integrity": true,
+    "G2_environment": true,
+    "G3_determinism": true,
+    "G4_recompute_vs_recorded": true,
+    "G5_precision_measured": true
+  },
+  "environment": {
+    "type": "cuda",
+    "name": "NVIDIA GeForce RTX 3050 A Laptop GPU",
+    "torch": "2.12.1+cu130",
+    "cuda_available": true,
+    "autocast_dtype": "bfloat16"
+  },
+  "eval_sets": {
+    "data/val.bin": "1becd214fbd573222b698921ebf18429789089dbfe91cfba162b08096c131035",
+    "data/sft_heldout.json": "b1ef0f7989a105272321dcb5c38508d10f7f67d7c59b5880a18fd94da587eaa9"
+  },
+  "checkpoints": {
+    "base": {
+      "checkpoint": "checkpoints/base.pt",
+      "step": 20000
+    },
+    "sft": {
+      "checkpoint": "checkpoints/sft.pt",
+      "step": 1722
+    }
+  },
+  "perplexity": {
+    "base": {
+      "tokens_scored": 4682240,
+      "mean_nll": 1.661307,
+      "perplexity": 5.2662,
+      "nll_sd": 2.069357,
+      "clustering": {
+        "k": 21990,
+        "mean_group_size": 212.93,
+        "icc": 0.031478,
+        "deff": 7.6711,
+        "n_eff": 610376.4
+      },
+      "se_iid_nats": 0.00095633,
+      "relative_se_iid": 0.00095633,
+      "se_measured_nats": 0.00264872,
+      "relative_se_measured": 0.00264872,
+      "inflation_vs_iid": 2.77,
+      "nll_digest": "ca7a07670996f4da"
+    },
+    "sft": {
+      "tokens_scored": 4682240,
+      "mean_nll": 1.71909,
+      "perplexity": 5.5794,
+      "nll_sd": 2.119288,
+      "clustering": {
+        "k": 21990,
+        "mean_group_size": 212.93,
+        "icc": 0.029616,
+        "deff": 7.2764,
+        "n_eff": 643479.9
+      },
+      "se_iid_nats": 0.00097941,
+      "relative_se_iid": 0.00097941,
+      "se_measured_nats": 0.00264194,
+      "relative_se_measured": 0.00264194,
+      "inflation_vs_iid": 2.7,
+      "nll_digest": "b323ed35a3adf4ff"
+    }
+  },
+  "determinism": {
+    "repeat_digest": "b323ed35a3adf4ff",
+    "bit_identical": true
+  },
+  "recompute_vs_recorded": {
+    "metric": "val_perplexity",
+    "recorded": 5.1981,
+    "recorded_is": "minimum over 40 evaluations - an order statistic, optimistically biased (ADR-051)",
+    "recomputed_full_set": 5.2662,
+    "estimator_rerun": {
+      "mean_nll": 1.6624508833885192,
+      "se_measured": 0.009191773811952731,
+      "se_iid_formula": 0.00323337,
+      "batches": 100,
+      "batch_seqs": 16,
+      "inflation_vs_iid": 2.84
+    },
+    "estimator_mean_perplexity": 5.2722,
+    "full_set_deviation_se": 0.12,
+    "recorded_deviation_se": -1.54,
+    "consistent": true
+  },
+  "precision_bar": {
+    "bar": 0.01,
+    "measured": 0.00264194,
+    "iid_lower_bound": 0.00097941,
+    "passes_on": "measured deff-adjusted SE"
+  },
+  "eval_stage_hash": "c32847578746",
+  "model_stage_hash": "57fddccb6447",
+  "elapsed_s": 72.3
+}

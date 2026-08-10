@@ -2808,3 +2808,148 @@ The metrics above are the ones the project already has instruments for. **No new
 proposed**, per the reasoning at the top. If Phase 7 should certify a new claim about
 `nLemon-14` rather than reproduce and precision-bound the existing ones, that claim and its bar
 are a separate registration, agreed before the harness runs.
+
+## ADR-050 — `eval_iters` migrates to an `eval` stage; the hash mapping, preserved
+
+**Status:** accepted, executed with sign-off. Discharges the IOU in [ADR-020](#adr-020).
+
+ADR-020 found `eval_iters` in `STAGE_FIELDS["train"]` and said it did not belong: it changes a
+reported metric, not a weight. It deferred the fix because moving it "would move
+`train_stage_hash`, making `base.pt` look stale over a parameter that changes no weight", and
+named the condition for the fix — *when Phase 7 introduces an eval stage*. Phase 7 has, so it is
+paid.
+
+**The provenance chain, recorded permanently because a hash was deliberately invalidated:**
+
+```
+train   ad70960ceb21   21 fields, with eval_iters      <- as recorded in base.pt,
+                                                          results/train_summary.json, and
+                                                          sft.pt's base_train_stage_hash
+   ->   b95bcbb2f347   20 fields, eval_iters removed   <- from this commit on
+model   57fddccb6447   UNCHANGED                       <- the weights' own fingerprint
+eval    c32847578746   NEW
+```
+
+Exactly one stage hash moved. `model`, `sft`, `dpo`, `data` and `tokenizer` are all untouched,
+verified by recomputation — so **the architectural fingerprint of the weights never moved, and
+`base.pt` remains verifiable through it.**
+
+**Why the invalidation is acceptable here when ADR-042 says a recorded hash is provenance.**
+ADR-042's rule is that a stage artifact's recorded hash carries its claim, and that quietly
+changing what a published field means is worse than documenting a trap. The rule is honoured by
+**recording the mapping, not by refusing the migration** — both sides are preserved above, so a
+reader verifying `base.pt` can check either and know which field list produced which value.
+
+The defect being fixed was live, not cosmetic: with `eval_iters` inside the train stage, tuning
+how many batches a *report* averages made the pretrained checkpoint go hash-dirty. Phase 7 exists
+to tune exactly that knob, so leaving it would have generated a spurious invalidation every time
+the harness was adjusted — many silent ones instead of one documented one.
+
+**What the `eval` stage contains,** and the two deliberate omissions:
+
+* `seed`, `strict_determinism`, `eval_iters`, and the pinned reporting decoding
+  (`sft_gate_temperature`, `sft_gate_top_k`, `sft_gate_new_tokens`).
+* **Not** the registered eval-set hashes. They are the tamper-evidence that detects a changed
+  artifact; making them an input to a stage fingerprint would be circular — the fingerprint would
+  change whenever the thing it is checking changed, which is precisely the signal being looked for.
+* **Not** the G5 threshold, on the standing rule that moving a bar must not make an artifact look
+  changed.
+
+## ADR-051 — Phase 7 GREEN, and the headline perplexity was an order statistic
+
+**Status:** accepted. **Phase 7 verdict: GREEN**, all five gates. But the gate designed to be able
+to fail on the model *did* fail on first reading, and what it caught is a correction to a number
+this project has published since Phase 4.
+
+### The scorecard
+
+| gate | | result |
+| --- | --- | --- |
+| G1 | eval-set integrity | both frozen hashes match |
+| G2 | environment | `cuda`, `torch 2.12.1+cu130`, recorded in the artifact |
+| G3 | determinism | two full passes over 4.68M tokens **bit-identical** (digest `b323ed35a3adf4ff`) |
+| G4 | recompute vs recorded | consistent, **after a defect in the gate itself was fixed** |
+| G5 | precision | measured relative SE **0.2642%** vs a registered ≤1.0% — **PASS** |
+
+**G5 validated the pre-registration.** ADR-049 registered the bar from the eval set's size and
+predicted, before measuring, a document-level ICC around 0.05 giving ~0.31%. Measured: **ICC
+0.0296, deff 7.2764, n_eff 643,480, relative SE 0.2642%** — and the iid figure was 0.0979%, so the
+honest precision is **2.7× the lower bound**. Publishing the iid number would have overstated the
+precision by that factor. The bar passes on the measured figure, as registered.
+
+### G4 failed first, and the first failure was mine
+
+The gate initially compared the full-set perplexity against a 2-SE interval built around the
+recorded value using an **iid token-level formula**. It read RED. Two things were wrong with the
+gate, and one thing is wrong with the record.
+
+**Gate defect 1 — the tolerance assumed independence.** The measured sampling SE of the recorded
+estimator is 0.009192 nats; the iid formula predicts 0.003236. **The formula understates it 2.84×**,
+because a batch is contiguous 256-token chunks and tokens inside a chunk correlate. This is
+ADR-033's error — and G5, twenty lines further down the same file, was already correcting for
+exactly this. *The right instrument was in the room.*
+
+**Gate defect 2 — the comparison was anchored to the wrong point.** `best_val_perplexity` is the
+**minimum over 40 evaluations**, saved because it was the lowest. It is an **order statistic**, not
+an unbiased estimate, so asking whether the full-set value falls in an interval *around it* is
+malformed: the reference is selected for being low. The well-posed question is whether the full-set
+value is consistent with **the distribution the record was drawn from**, which needs no
+assumptions — re-run the estimator and use the spread of its own batch losses.
+
+Rewritten that way:
+
+```
+estimator re-run   mean ppl 5.2722,  measured SE 0.009192 nats (2.84x the iid formula)
+full-set           5.2662            +0.12 SE from the estimator mean   -> CONSISTENT
+recorded           5.1981            -1.54 SE from the estimator mean   -> biased low
+```
+
+**Fixing a tolerance after a failure is the move this project distrusts, so it gets the standing
+test: would the change have been made had G4 passed?** Yes. An iid tolerance where clustering is
+present is wrong at any outcome, the same file already did it correctly for G5, and anchoring an
+interval on an order statistic is malformed independently of which side of it a number lands. The
+correction was also verified against an independent probe before being written into the gate: 24
+repeats of the training estimator put the full-set value at +0.16 SE and the recorded value at
+−1.48 SE, matching the in-gate figures.
+
+### The perplexity result — a confirmation, NOT a discovery
+
+**An earlier draft of this ADR presented "5.1981 is optimistically biased" as a Phase 7 finding.
+That was an overclaim and is corrected here: the README has disclosed it since Phase 4.** Its own
+words — *"at `eval_iters: 100` the estimate moves between 5.198 and 5.280 across loader seeds, and
+5.1981 sat at the optimistic edge; the low-variance estimate over 4.1M tokens is 5.2680"* — and it
+already routed the published *ratios* through the harsher 5.4636 denominator precisely so the
+headline would not rest on the friendlier measurement.
+
+Claiming a documented disclosure as a discovery would be the same species of error this project
+polices everywhere else, so what Phase 7 actually adds is stated narrowly:
+
+1. **Independent confirmation on a larger instrument.** The full 4,682,459-token set gives
+   **5.2662**, against the earlier 4.1M-token estimate of 5.2680 — agreement to 0.03%, from a
+   different pass over a different token count. The low-variance figure was right.
+2. **A sharper mechanism than "sampling noise plus subset."** The recorded value is the **minimum
+   over 40 evaluations**, because `train.py` saves only on improvement. That makes it an *order
+   statistic*, which is a stronger and more specific claim than sitting at an optimistic edge: it
+   says the number is biased **by construction and by a predictable amount**, not merely unlucky.
+   It sits at the 4.2 percentile of its estimator's own distribution.
+3. **A quantified precision for it**, which no prior figure carried: relative SE 0.2642%, measured
+   with the design effect rather than assumed iid.
+
+*Related to ADR-020's correction of the bigram-floor ratio from 6.9× to 7.65×*, and the shared
+lesson is worth stating once: **a quantity selected by a maximum or minimum is not an estimate.**
+`best_val_perplexity` announces its own selection in its field name, and the selection still had to
+be reasoned about explicitly before it was priced.
+
+**The verdict never depended on it.** Phase 4's registered bar was ≤ 8.0; 5.1981, 5.2662, 5.2680
+and 5.4636 all clear it by a wide margin — exactly as ADR-020 noted for the previous correction. The
+headline is restated as the full-set value because it is the better measurement, not because
+anything changes.
+
+### Reported alongside, not gated
+
+**`sft.pt`'s validation perplexity is 5.5794 — worse than base's 5.2662, by 6.0%.** That is
+expected and is not a regression to be alarmed at: SFT specialises the model onto instruction
+format, so its fit to the *pretraining* distribution degrades. It is reported because a scorecard
+that showed only the metrics a stage improves would be an advertisement. The Phase 5 gate measured
+what SFT was for — instruction adherence — and it is green there; this number is the price paid for
+it, quantified.

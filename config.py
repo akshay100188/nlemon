@@ -54,10 +54,16 @@ STAGE_FIELDS: dict[str, tuple[str, ...]] = {
         "dropout", "mlp_ratio", "bias",
         "micro_batch", "grad_accum_steps", "lr", "max_steps", "warmup_steps",
         "weight_decay", "beta1", "beta2", "grad_clip", "min_lr_ratio",
-        # eval_iters is here but should not be (ADR-020): it changes the reported
-        # metric, not the weights. Moving it now would shift base.pt's recorded
-        # hash for no real change; it migrates to an eval stage in Phase 7.
-        "eval_iters",
+        # eval_iters USED to be here and deliberately no longer is: ADR-020
+        # promised the move, ADR-050 executes it. It changes a reported metric,
+        # not a weight, so leaving it in made the pretrained checkpoint go
+        # hash-dirty whenever a reporting knob was tuned. The migration
+        # invalidates exactly one recorded hash, and both sides are preserved
+        # permanently in ADR-050 rather than silently overwritten:
+        #     train  ad70960ceb21 (21 fields, with eval_iters)
+        #        ->  b95bcbb2f347 (20 fields, without)
+        #     model  57fddccb6447 - UNCHANGED, so the weights' own fingerprint
+        #                           never moved and base.pt stays verifiable.
     ),
     # Everything that changes the weights in sft.pt. Includes the whole "train"
     # set, because sft.pt is a continuation of base.pt and a different base is a
@@ -112,6 +118,19 @@ STAGE_FIELDS: dict[str, tuple[str, ...]] = {
         "pref_prompts", "pref_samples", "pref_max_length_gap",
         "dpo_beta", "dpo_lr", "dpo_epochs", "dpo_micro_batch",
         "dpo_grad_accum_steps", "dpo_warmup_steps",
+    ),
+    # Everything that changes what the Phase 7 scorecard REPORTS, and nothing that
+    # changes a weight (ADR-050). This is the stage ADR-020 said eval_iters
+    # belonged to, created when Phase 7 arrived - the condition that IOU named.
+    #
+    # It holds the reporting knobs only. The registered eval-set hashes are
+    # deliberately NOT here: they are the tamper-evidence that detects a changed
+    # artifact, so making them an input to a stage fingerprint would be circular.
+    # Nor are the G5 thresholds, on the standing rule that moving a bar must not
+    # make an artifact look changed.
+    "eval": (
+        "seed", "strict_determinism", "eval_iters",
+        "sft_gate_temperature", "sft_gate_top_k", "sft_gate_new_tokens",
     ),
 }
 
