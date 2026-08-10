@@ -14,6 +14,100 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 
 ---
 
+## What this project is actually about
+
+The headline numbers are table stakes. A 14M model reaching 5.27 perplexity on TinyStories is
+unremarkable — the interesting artifact is the **decision record**: 51 ADRs, five gates that failed,
+and a documented habit of catching the measurement lying before it was trusted.
+
+**Read the methodology failure first, because it is the strongest evidence here.**
+
+### The right instrument was in the room, twenty lines away
+
+Phase 7's `G4` gate compares a recomputed metric against what was published. It read RED. The
+recomputed value was fine; **the gate was wrong, and I wrote it.**
+
+It built its tolerance from an iid formula — treating 409,600 tokens as 409,600 independent
+observations. They are not: a batch is contiguous 256-token chunks and tokens inside a chunk
+correlate. The formula understated the real sampling error **2.84×**.
+
+And `G5`, **twenty lines below in the same file**, already corrected for exactly this — measuring a
+design effect over documents instead of assuming independence, because a prior phase had been
+burned by that assumption ([ADR-033](ADR.md)). I had built the right instrument, put it in the same
+function, and then not used it where it was needed.
+
+*That is the failure mode every real system has and almost no write-up admits.* It is not a knowledge
+gap — the knowledge was present, written down, and executing in adjacent code. It was a failure to
+apply it consistently. The fix took the standing test the project uses for post-failure changes —
+*would I have made this change if the gate had passed?* — and it passed that test for a reason
+independent of the outcome: an iid tolerance under clustering is wrong whichever side of it a number
+falls on.
+
+There is a second beat in the same phase. Drafting the ADR for it, I wrote up "the published
+perplexity is optimistically biased" as a Phase 7 discovery — then found the README had disclosed it
+since Phase 4, in its own words, and had already routed the published ratios through a harsher
+denominator for that exact reason. **Claiming a documented disclosure as a discovery is the same
+species of error the project polices everywhere else**, so the ADR now leads with the correction and
+states Phase 7's actual, narrower contribution.
+
+### The finding worth more than any gate verdict
+
+Phase 6 applied DPO to improve on-topic adherence. The verdict was RED. The *measurement* is the
+result:
+
+> **DPO rewrote 49.4% of the eval set — 154 of 312 responses — to move its target 3.5 points.**
+> 21 responses flipped toward naming the subject, 10 flipped away. Net +11.
+
+It was not inert; it rewrote half the eval and bought almost nothing directional. Meanwhile it
+reached **~81% ranking accuracy on its own 714 training pairs**. The preference was learned
+thoroughly and **did not transfer** to subjects the pairs never named.
+
+Reported as `+3.5pt`, that reads as a small win. Reported as the decomposition, it is a specific,
+useful statement about what preference optimisation does at this scale: **it re-ranks what the model
+already samples, and re-ranking is not generalisation.** The claim ships narrowed to the treatment
+that was actually run — one epoch, 22 steps, lr 5e-7, stopped deliberately before convergence — not
+as a claim about DPO.
+
+### Every phase's real story was a gate caught lying
+
+| phase | the headline | what actually happened |
+|---|---|---|
+| 1 | corpus cleaned | `ftfy` **manufactured 140,572 dagger characters absent from the source.** The fix was measuring the cleaner's output instead of trusting the library. 9 residual chars remain *on purpose* — one is a legitimate `papier-mâché`. |
+| 2 | 8k BPE trained | compression **saturated**; the metric could not discriminate between candidate vocabularies, so it was retired rather than reported as a pass |
+| 4 | perplexity 5.20 vs bar 8.0 | the published bigram ratio was **corrected 6.9× → 7.65×** against the project's own interest; the headline was later restated again as **5.2662**, because `best_val` is a *minimum over 40 passes* — an order statistic, biased by construction |
+| 5 | SFT green | **RED first.** 47.8% of training pairs mentioned their subject at most once: the miner required the subject to *appear*, and appearing is not being about it. Attempt #2 is reported **beside** attempt #1, not instead of it. The detection floor in attempt #1's registration was also **understated 9.3 → 12.9pt** — both of us checked internal consistency instead of recomputing the floor. |
+| 6 | DPO | **RED-characterized.** Nothing was traded, the target barely moved, and the transfer gap is the finding. A grazing green was refused laundering: the amber band had been registered on the wrong side of the bar, and the rule was fixed going forward *without moving the verdict*. |
+| 7 | scorecard green | `G4` failed on my own iid tolerance, above |
+
+### The recurring class: assert, don't infer
+
+One pattern produced **seven** distinct failures across four phases. Each time, a declared value or
+state that the surrounding structure made unreachable or untrue — and nothing compared the two:
+
+1. a 200-token generation cap made the length band's upper edge **unreachable**, turning a
+   story-shape metric into a truncation detector
+2. `pref_prompts: 2000` against a population of **1,240** distinct prompts
+3. `dpo_warmup_steps: 50` in a **22-step** run — the registered learning rate was never once applied
+4. the **interpreter**: an entire phase ran on a CPU-only torch while every prior phase used CUDA
+5. the **project memory** said "Phase 1 green" through Phases 5 and 6 — the most dangerous instance,
+   because it is the record the project would be rebuilt from and no gate reads it
+6. a regression test **believed passing for four phases while unrunnable** (`pytest` absent from the
+   interpreter). A test that cannot run is not a passing test.
+7. **inside the ADR written to stop the pattern** — it shipped with an *inferred* explanation as its
+   motivating example
+
+The list was written at four and grew to seven while being written. It is left visible, with a
+correction notice rather than a quiet rewrite, because the useful lesson is not the rule — it is that
+**stating a rule and following it are different acts.** Three times in a single working session, a
+plausible-sounding explanation for an observation outran the measurement, and each was corrected by
+instrumenting the thing instead of reasoning about it.
+
+Now closed by a [phase-close checklist](#status) and by guards **verified firing**, not assumed:
+device assertion (exit 1, no artifact written), cross-device comparison refusal, and eval-set hash
+mismatch — caught on a single mutated field in one of 312 prompts.
+
+---
+
 ## Status
 
 | Phase | Stage | State |
@@ -25,7 +119,7 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 | 5 | SFT | 🟥 attempt #1 **RED** → 🟩 attempt #2 **green** ([why](results/sft_gate.md)) |
 | 6 | DPO | 🟥 **RED** — target moved +3.5pt against a +12.5pt bar, below the 8.9pt the eval can resolve; no floor breached ([why](#phase-6-dpo-red)) |
 | 7 | Eval harness | 🟩 **green** — 5 gates: eval-set integrity, environment, determinism, recompute-vs-recorded, precision ([scorecard](results/phase7_scorecard.json)) |
-| 8 | Public artifact | ⬜ not started |
+| 8 | Public artifact | 🟩 **green** — [model card](MODEL_CARD.md), fp32 weights-only release (55.3 MB, hash in [`release_manifest.json`](release_manifest.json)) |
 
 **Phase-close checklist.** A phase is not closed until every line holds. Each exists because it
 once did not ([ADR-046](ADR.md)):

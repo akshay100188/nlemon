@@ -1,0 +1,24 @@
+{
+  "artifact": "checkpoints/nlemon-14-sft-weights.pt",
+  "sha256": "e3f6b7ce7e5a1a74337a3a3ae2f2968ff1131e9de79843606cef705748e7668b",
+  "bytes": 55302395,
+  "source_checkpoint": "checkpoints/sft.pt",
+  "source_sha256": "19d1c558683eb45116a1a85cc575ce6ded1576245efac652eb927ed13f8f9313",
+  "bit_identical_to_source": true,
+  "tensors": 77,
+  "dtype": "float32",
+  "why_not_bf16": "bf16 would be 33.8 MB but a different model than the Phase 7 scorecard measured; the identity is the certification (ADR-047's confound in a new hat).",
+  "parameters": {
+    "state_dict_sum": 16889856,
+    "tied_embedding": 3072000,
+    "unique_parameters": 13817856,
+    "arithmetic": "16,889,856 - 8000x384 = 13,817,856"
+  },
+  "step": 1722,
+  "sft_stage_hash": "ecad1e4b412d",
+  "config_hash": "fbc725d5e63b",
+  "model_stage_hash": "57fddccb6447",
+  "excluded": [
+    "optimizer"
+  ]
+}
