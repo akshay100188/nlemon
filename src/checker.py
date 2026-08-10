@@ -244,12 +244,65 @@ def score_checkpoint(cfg: Config, checkpoint: str, label: str) -> dict:
         "decoding": {"temperature": cfg.sft_gate_temperature,
                      "top_k": cfg.sft_gate_top_k,
                      "new_tokens": cfg.sft_gate_new_tokens},
+        # The device AND the interpreter are part of the measurement, not trivia
+        # about the machine (ADR-047). Sampling draws come from a pinned CPU
+        # generator, but the LOGITS come from the forward pass, so CUDA-bf16 and
+        # CPU-fp32 assign different probabilities and the multinomial picks
+        # differently. Two checkpoints scored under different builds are not
+        # comparable, and this field is what lets the gate refuse the comparison
+        # instead of making it.
+        #
+        # `torch` is recorded because the device was the SYMPTOM and the
+        # interpreter was the CAUSE: a global CPU-only torch cannot report cuda
+        # no matter what hardware is present, so "which torch" is the question
+        # that actually explains a device, and it belongs in the artifact.
+        "device": {"type": dev.device.type, "name": dev.name,
+                   "torch": torch.__version__,
+                   "cuda_available": torch.cuda.is_available()},
         "length_band": list(band),
         "scores": agg,
         "per_prompt": rows,
         "responses": responses,   # kept so controls can be recomputed without regenerating
         "samples": samples,
     }
+
+
+def assert_device(require: str, allow_cpu: bool) -> None:
+    """Fail loud if the environment is not the one this run registered (ADR-046/047).
+
+    Phase 6 was run under a global CPU-only torch by accident. Nothing raised,
+    because nothing asked. The device silently became part of the measurement and
+    invalidated a comparison across a phase boundary.
+
+    The interpreter is checked as well as the device, because the interpreter is
+    the cause: a `+cpu` torch build cannot report cuda whatever hardware is
+    present, so `torch.cuda.is_available()` being False is the *symptom* of the
+    wrong python, and naming the real cause in the error is what makes it
+    fixable in one step instead of three.
+    """
+    import torch
+    from utils.device import probe
+
+    dev = probe()
+    got, build = dev.device.type, torch.__version__
+    print(f"  environment: torch {build}, device {got} ({dev.name}), "
+          f"cuda_available={torch.cuda.is_available()}")
+    if got == require:
+        return
+    if got == "cpu" and allow_cpu:
+        print("  WARNING: running on CPU by explicit --allow-cpu. Scores from "
+              "this run are NOT comparable with scores taken on another device.")
+        return
+    raise SystemExit(
+        f"DEVICE ASSERTION FAILED: required {require!r}, got {got!r} with torch "
+        f"{build!r}.\n"
+        + ("This torch is a CPU-only build, so no GPU can be found regardless of "
+           "the hardware. Use the repo venv:\n"
+           "    ./.venv/Scripts/python.exe -m src.checker ...\n"
+           if "+cpu" in build or not torch.cuda.is_available() else
+           "A CUDA build is present but no device was acquired.\n")
+        + "Pass --allow-cpu to override deliberately; it will be recorded in the "
+          "artifact and the gate will refuse to compare across devices.")
 
 
 def cmd_score(cfg: Config, checkpoint: str, label: str) -> None:
@@ -725,6 +778,28 @@ def cmd_dpo_gate(cfg: Config) -> None:
     if sft["length_band"] != dpo["length_band"]:
         raise SystemExit("length band differs between the two scorings")
 
+    # DEVICE PARITY (ADR-047). This gate was read once across a GPU-scored sft
+    # and a CPU-scored dpo, and the delta it reported was uninterpretable as a
+    # result: different precision means different logits, different draws, and
+    # ~half the responses change from the device alone. The decoding check above
+    # existed because "comparing two stages under different decoding measures the
+    # decoder, not the fine-tune" - the identical argument applies to the device,
+    # and it was missing.
+    for side, art in (("sft", sft), ("dpo", dpo)):
+        if "device" not in art:
+            raise SystemExit(
+                f"{side} scoring predates the recorded-device field, so the "
+                f"device it ran on is unknown and this comparison cannot be "
+                f"verified. Re-score it (ADR-047).")
+    if sft["device"] != dpo["device"]:
+        raise SystemExit(
+            f"DEVICE MISMATCH - refusing to compare:\n"
+            f"  sft {sft['device']}\n  dpo {dpo['device']}\n"
+            f"Sampling draws are seed-pinned but the logits are not: CUDA-bf16 "
+            f"and CPU-fp32 assign different probabilities, so the multinomial "
+            f"picks differently and about half the responses change from the "
+            f"device alone. Re-score both on one device (ADR-047).")
+
     bars = derive_dpo_bars(cfg, sft)
     d = sft["decoding"]
     print(f"Phase 6 gate  -  T={d['temperature']} k={d['top_k']} "
@@ -867,8 +942,18 @@ def main() -> None:
     ap.add_argument("--config", default=None)
     ap.add_argument("--checkpoint", default="checkpoints/base.pt")
     ap.add_argument("--label", default="base")
+    # Asserted, not inferred (ADR-046). cuda is the default because every
+    # artifact of record before Phase 6 was produced on it, so cpu is the
+    # deviation and deviations are declared.
+    ap.add_argument("--require-device", default="cuda",
+                    help="device this run must get; fails loud otherwise")
+    ap.add_argument("--allow-cpu", action="store_true",
+                    help="deliberately permit CPU; recorded in the artifact and "
+                         "the gate will refuse cross-device comparisons")
     args = ap.parse_args()
     cfg = Config.load(args.config)
+    if args.command == "score":
+        assert_device(args.require_device, args.allow_cpu)
     if args.command == "demo":
         cmd_demo(cfg)
     elif args.command == "gate":

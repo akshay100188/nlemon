@@ -2378,3 +2378,82 @@ a device, a budget — should be asserted against the thing that will actually c
 moment of consumption, and fail loud on mismatch.
 
 Check the artifact, don't trust the status.
+
+## ADR-047 — Phase 6 was measured across two environments; the audit and its rule
+
+**Status:** accepted. **Phase:** 6, post-hoc audit. **This section is committed before the
+device-matched numbers are read.** The classification rule below is registered first so the
+verdict cannot be chosen after the number appears — the same discipline as every bar in this
+project, applied to a correction.
+
+### The defect
+
+Phase 6 was run under the **global CPU-only torch** (`2.12.1+cpu`), not this repo's venv
+(`2.12.1+cu130`, CUDA available, RTX 3050 A). The project memory warned about exactly this and
+the warning was not applied.
+
+Consequences, in order of severity:
+
+* `base.pt` and `sft.pt` were trained on **GPU** (`train_summary.json` and
+  `sft_train_summary.json` both record the device). `dpo.pt` was trained on **CPU**.
+* The committed `sft` scores are **GPU-produced** — verified, not assumed: re-scoring `sft.pt`
+  under the venv reproduced its committed responses **312/312** and every aggregate to four
+  decimals. Phase 5 is unaffected and is now demonstrably reproducible across sessions *and*
+  interpreters.
+* Therefore the Phase 6 gate compared a **GPU-scored `sft`** against a **CPU-scored `dpo`**.
+
+**Why that is a confound and not a nuisance.** Sampling draws are seed-pinned on the CPU
+generator deliberately, so the *draw* is device-independent. The **logits are not**: CUDA-bf16
+and CPU-fp32 assign different probabilities, one token diverges, and an autoregressive
+continuation cascades from there. 154 of 312 responses (49.4%) differ between the committed
+`sft` and `dpo` scorings — a churn rate fully consistent with *either* DPO or the device alone.
+Nothing in the original reading separates them.
+
+**The check that should have caught it already existed, one field away.** `cmd_gate` has
+refused mismatched *decoding* since Phase 5, with the comment *"comparing two stages under
+different decoding would measure the decoder, not the fine-tune."* That argument transfers to
+the device word for word. The reasoning was written down and simply never generalised a step.
+
+### The fixes
+
+1. Score artifacts now record `device: {type, name, torch, cuda_available}`. `torch` is in there
+   because the device was the symptom and the **interpreter was the cause**: a `+cpu` build
+   cannot report cuda whatever hardware is present.
+2. `checker score` **asserts** its device (`--require-device`, default `cuda`) and fails loud,
+   naming the venv in the error. CPU requires an explicit `--allow-cpu`, which is recorded in
+   the artifact.
+3. `cmd_dpo_gate` **refuses** to compare two scorings whose `device` differs, and refuses just
+   as loudly if either artifact predates the field — because then the device is unknown and the
+   comparison is unverifiable rather than fine.
+
+### The classification rule, registered before the re-read
+
+The device-matched gate will be read in the original order — side-condition, floors, delta — and
+the outcome classified as exactly one of:
+
+* **A — verdict holds, finding holds.** Still RED, delta still below the detection floor, and the
+  matched delta close enough to +3.5pt that ADR-044's interpretation is unchanged. Response: the
+  record gets a **correction note, not a new verdict.** The original numbers were confounded, the
+  matched numbers replace them, the RED stands and now stands clean.
+* **B — verdict holds, finding moves.** Still RED, but the matched delta differs materially.
+  Response: ADR-044's +3.5pt transfer finding is **rewritten to the matched number**, the README
+  updated, and the sign/magnitude interpretation re-checked against the corrected values rather
+  than carried over.
+* **C — verdict flips.** The matched read is not RED. Response: **stop.** Full re-registration
+  conversation before anything ships. Not resolved solo.
+
+"Materially" is fixed here rather than judged later: a matched delta that changes the multiple of
+the 8.9pt detection floor by more than 0.25x, or that crosses either the 8.9pt floor or the
+232/233-of-312 AMBER− boundary, is case B. Anything smaller is case A.
+
+An additional decomposition will be reported alongside, because the audit makes it available for
+free and it is the number that actually explains the phase:
+
+* `dpo` on CPU vs `dpo` on GPU — **identical weights, so this is the pure device effect.**
+* `sft` on GPU vs `dpo` on GPU — **identical device, so this is the pure DPO effect.**
+* `sft` on GPU vs `dpo` on CPU — the original, confounded reading.
+
+If the pure device effect is comparable in size to the pure DPO effect, then the honest summary
+of Phase 6 is not merely that DPO did little, but that **at this scale of weight change a
+precision difference and a training intervention are the same size** — which is a sharper
+statement about how small the intervention was than the delta alone conveys.
