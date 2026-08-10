@@ -2171,3 +2171,166 @@ not. Future zone boundaries should be **reported against the attainable values t
 them** — "RED at <= 232/312, AMBER- at >= 233/312" is checkable in a way that "AMBER- >= 74.5%"
 is not, and it makes a one-observation margin visible in the registration rather than only in
 the post-mortem.
+
+## ADR-044 — Auditing the transfer finding for an LR confound, and narrowing it
+
+**Status:** accepted. **Phase:** 6. Amends the claim in [ADR-043](#adr-043).
+
+A challenge was raised against ADR-043's headline: the warmup defect in ADR-041 meant the
+registered learning rate was never applied, so the +3.5pt transfer result was produced by a
+warmup-dominated run and the null finding might be manufactured by undertraining. If true this
+would be serious — it cuts toward the null, which is the direction that flatters the conclusion,
+and a confound that flatters is the one to check hardest.
+
+**The premise is false, and the artifact says so.** The warmup defect never touched `dpo.pt`.
+Three independent confirmations:
+
+* **The curve's own `lr` column.** Step 1 logs `2.500000e-07`, which is `5e-7 x 1/2` — warmup
+  **2** in effect, not 50. From step 2 to step 22 it reads `5.000000e-07` exactly. **21 of 22
+  steps ran at the registered rate.**
+* **The defective run wrote nothing.** It was killed at step 1 of 22; no `dpo.pt`, no summary.
+* **Commit order.** `b75feeb` fixed both defects, and every artifact of record was produced
+  after it.
+
+So "the registered experiment never actually ran, so run it" does not apply here. It ran.
+
+### But the convergence question is independently worth answering, and the answer is split
+
+Re-executed at `log_interval: 1` for a 22-point curve. `log_interval` is exempt from every stage
+hash on the grounds that it changes no output, and that claim was verified rather than trusted:
+**all 77 weight tensors bit-identical** to the original `dpo.pt`. (The file hash differs anyway,
+because the checkpoint embeds `config` and `config_hash` — ADR-042's wart on a second artifact
+type: a pure bookkeeping knob moves a checkpoint's recorded fingerprint while changing nothing
+inside it.)
+
+OLS slope per step over the last half of training, `t = slope/SE`, H0 = plateau:
+
+| series | steps 12–22 slope | t | reading |
+| --- | --- | --- | --- |
+| training loss | −4.97e-04 | **−3.92** | still descending, decisively |
+| margin | +1.01e-03 | **+3.96** | still climbing, decisively |
+| pair accuracy | +2.8e-04 | +0.05 | no detectable trend |
+
+**The two instruments disagree, and the disagreement is the finding.** Pair accuracy went 80.0%
+(steps 2–11) to 81.5% (steps 12–22) — flat. Margin kept climbing at t ≈ 4 over the same span.
+Accuracy is a *sign* statistic and margin is a *magnitude* one, so flat accuracy with rising
+margin means the model had settled **which** pairs it ranks correctly and was still increasing
+**how confidently**. It was no longer learning new rankings; it was sharpening existing ones.
+
+*That is precisely the over-optimisation ADR-039 named in advance* — "past its useful point it
+sharpens toward the preference signal until it trades every other property against it." The
+pre-committed "do not extend" was an a priori argument when it was written. **The curve now
+supplies empirical support for it:** continuing would have grown margin without ranking more
+pairs correctly, which is the trade the floors exist to catch, bought for nothing.
+
+**The honesty limit on that, stated rather than buried.** The accuracy null is weakly powered.
+The slope SE is 5.34e-03/step, so the smallest gain the test could call nonzero is ~10.7
+accuracy points over the 10-step span. "No detectable trend" here means "no gain larger than
+about 11 points" — it is not proof of a plateau. Accuracy is also quantised to 1/32 = 0.031 per
+pair at this batch size. The margin result is the decisive one; the accuracy result is
+suggestive.
+
+### The claim narrows
+
+The registered stopping rule was one epoch, chosen deliberately to stop *before* convergence.
+So "still descending at step 22" is the intended state of a deliberately conservative treatment,
+not evidence of mis-execution — but it is still a boundary on what may be claimed, and the
+project's rule is to narrow the claim where it was published.
+
+**Not publishable:** "DPO does not generalise."
+
+**Publishable:** *Under the registered treatment — one epoch, 22 steps, lr 5e-7, deliberately
+stopped before convergence with training loss still descending — DPO reached ~81% pair-ranking
+accuracy on 714 training pairs over 293 subjects, where accuracy had stopped improving while
+margin had not, and transferred +3.5pt to 78 unseen subjects, below the 8.9pt this eval
+resolves.*
+
+The narrowing is not cosmetic. The unqualified claim would assert something about DPO; the
+narrowed one asserts something about **this treatment of this model**, which is what was
+measured. A reader who wants the unqualified claim needs a converged run, and that is a
+different experiment with its own registration — parked, not performed here, and explicitly not
+triggered by this phase's outcome.
+
+## ADR-045 — A gate may fail informatively: RED-blocking vs RED-characterized
+
+**Status:** accepted. **Phase:** 6 → 7 transition. Amends the project's stop condition.
+
+The README has said since Phase 1: *"No phase starts until the previous phase's gate is green."*
+Phase 6 is RED, so that rule blocks Phase 7. The rule is now amended, and the amendment is
+registered **before** it is applied.
+
+### Why the rule as written is wrong
+
+The stop condition exists to prevent building on a foundation that is broken or unproven. It was
+written when every conceivable RED was that — a defect, a missing capability, an instrument that
+did not work. Phase 5's RED was exactly that kind: 47.8% of training pairs taught aboutness at
+most once, a validity defect that would have been fixed whether or not the gate failed.
+
+Phase 6's RED is a different animal. **Nothing is broken.** The pairs passed a pre-flight the
+gate could not have rescued (length parity p = 0.80 after the aboutness filter), the bar was
+priced to the mechanism and cut to 1.41x for that reason, the gate ran in the registered order,
+and the result is the technique doing what the technique does. The phase asked two questions and
+answered both:
+
+* *Safety* — will DPO spend Phase 5's 5.5-point grazing margin buying reward? **No.** Every
+  floor green, side-condition holds, nothing traded.
+* *Capability* — how much can re-ranking close? **About a quarter of what teaching closed on the
+  same metric**, +3.5pt against +12.5, below the 8.9pt the eval resolves.
+
+Both answers are real measurements. Neither is a near-miss, and neither says the foundation is
+unproven — because **the foundation for Phase 7 is `sft.pt`, which is Phase 5's GREEN, and it is
+demonstrably intact.** Blocking the eval harness on Phase 6 would treat "the DPO delta did not
+clear its bar" as if it meant "the model is not ready to be evaluated." Those are unrelated
+claims about different checkpoints.
+
+### The amendment
+
+A phase gate now resolves to one of three states rather than two:
+
+* **GREEN** — the phase's bar was cleared. Proceed.
+* **RED-blocking** — the phase's question is unanswered, or answered by a broken instrument, or
+  the next phase's foundation is unproven. **Stop.** Fix the instrument and re-run, or
+  re-register on a validity defect (the Phase 5 attempt-#1 case).
+* **RED-characterized** — the phase's question is *answered*, the answer is negative or null,
+  the mechanism of the answer is understood, and the next phase's foundation is intact.
+  **Proceed, and ship the RED as the phase's result.**
+
+The classification is made against the registered gate and the instrument's validity checks,
+never against how much the result is liked. The discriminating question is not "is the number
+disappointing" but **"does this phase leave the next one standing on something unproven?"**
+
+**Phase 6 is RED-characterized.** Phase 7 proceeds, on `sft.pt` as the model of record, with
+`dpo.pt` available as a fully characterised side-result — a weak, non-transferring refinement
+that cost nothing, whose limits are stated in ADR-044.
+
+### Why this is an amendment and not an escape hatch
+
+The obvious objection is that a three-state rule lets any inconvenient RED be relabelled
+"characterized" and walked past. Three things make that harder than it sounds, and they are the
+load-bearing part of this ADR:
+
+1. **RED-characterized still ships as RED.** It is not a pass, it is not an amber, and it does
+   not become a footnote. Phase 6's README row leads with the failed delta. The phase table will
+   carry a red square permanently. Nothing about the classification softens the published result
+   — it governs only whether the *next* phase may start.
+2. **It requires the mechanism to be understood, not merely the number to be recorded.** "We do
+   not know why it failed" is RED-blocking by definition. Phase 6 qualifies because the
+   mechanism is measured: re-ranking cannot teach, accuracy saturated while margin climbed, the
+   preference was learned and did not transfer.
+3. **It requires the next phase's foundation to be independently certified.** Here that is
+   Phase 5's GREEN plus Phase 6's own floors and side-condition confirming `sft.pt` is
+   untouched. A RED that damaged its own foundation cannot be characterized past.
+
+**And it forbids the move it might seem to license.** RED-characterized explicitly does *not*
+authorise re-registering the failed phase to chase a green. Phase 6's transfer finding is a real
+question and a tempting one to re-register on, and it is refused on the test this project uses:
+*would the different experiment be built if Phase 6 had gone green?* No — a green would have led
+straight to Phase 7. **Outcome-triggered is the tell.** The transfer question is parked as a
+separately scoped future experiment with its own registration, not as a Phase 6 rescue.
+
+### The point worth keeping
+
+A gate that is allowed to fail is only meaningful if some of its failures are informative rather
+than fatal. Until Phase 6 this project had produced exactly one RED, and it was a defect. Phase 6
+produced the first RED that is a **finding** — and the stop-condition rule predated the
+possibility. The rule is amended to admit it, and the amended rule is then applied.

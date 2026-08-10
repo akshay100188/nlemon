@@ -24,10 +24,16 @@ Release stages: `nLemon-14-base` → `-sft` → `-dpo`.
 | 4 | Pretraining | ✅ done |
 | 5 | SFT | 🟥 attempt #1 **RED** → 🟩 attempt #2 **green** ([why](results/sft_gate.md)) |
 | 6 | DPO | 🟥 **RED** — target moved +3.5pt against a +12.5pt bar, below the 8.9pt the eval can resolve; no floor breached ([why](#phase-6-dpo-red)) |
-| 7 | Eval harness | ⬜ not started |
+| 7 | Eval harness | ⬜ not started — proceeds on `sft.pt`; Phase 6 is RED-characterized, foundation intact |
 | 8 | Public artifact | ⬜ not started |
 
-No phase starts until the previous phase's gate is green.
+No phase starts until the previous phase's gate resolves. A gate is **green** (proceed),
+**RED-blocking** (the question is unanswered or the instrument is broken — stop and fix), or
+**RED-characterized** (the question is answered, the answer is negative or null, the mechanism is
+understood, and the next phase's foundation is intact — proceed, and ship the RED as the result).
+Phase 5 attempt #1 was RED-blocking. Phase 6 is RED-characterized. A RED-characterized gate still
+ships as a RED and never licenses re-registering the failed phase to chase a green
+([ADR-045](ADR.md)).
 
 **Phase 5 failed first, and that result stands.** Attempt #1 came back RED —
 `subject_mention` reached 50.0% against a pre-registered 60.0%. The diagnosis was that
@@ -88,10 +94,25 @@ distribution — and anchored the bar at 44% of remaining headroom while flaggin
 the time as *"the optimistic edge rather than a neutral estimate."* That caveat is now a
 measurement: **re-ranking bought about a quarter of what teaching bought on the same metric.**
 
-**The sharpest number is the transfer gap.** Ranking accuracy on the 714 training pairs reached
-**78.1%** from a 50% start — the preference was learned thoroughly — while held-out
+**The sharpest number is the transfer gap.** Ranking accuracy on the 714 training pairs over 293
+subjects reached **~81%** from a 50% start — the preference was learned — while held-out
 `subject_mention` moved +3.5pt. *The preference was learned and did not generalise* to subjects
 the pairs never named. That is a more useful finding than the verdict.
+
+The claim is stated at the width it was measured at ([ADR-044](ADR.md)). **Not** "DPO does not
+generalise", but: *under the registered treatment — one epoch, 22 steps, lr 5e-7, deliberately
+stopped before convergence — DPO reached ~81% pair-ranking accuracy and transferred +3.5pt to 78
+unseen subjects.* The stopping point was checked rather than assumed: over the last half of
+training, pair accuracy was flat (80.0% → 81.5%, t = +0.05) while margin still climbed
+(t = +3.96). Accuracy is a sign statistic and margin a magnitude one, so the model had settled
+*which* pairs it ranked correctly and was still increasing *how confidently* — sharpening, which
+is exactly the over-optimisation the pre-committed "do not extend" was written to avoid. The
+accuracy null is weakly powered (it could only resolve a gain larger than ~11 points), so the
+margin result carries the reading and the accuracy result is suggestive.
+
+An LR confound was checked and refuted: the warmup defect ([ADR-041](ADR.md)) never touched this
+checkpoint — the curve's own `lr` column reads `5.000000e-07` from step 2 to 22, and the
+defective run was killed at step 1 and wrote nothing.
 
 Per the pre-committed response, the phase is **not extended**: no extra epochs, no higher LR, no
 more pairs, no third attempt at a lower bar ([ADR-032](ADR.md), [ADR-043](ADR.md)).
