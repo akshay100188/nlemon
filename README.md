@@ -62,6 +62,16 @@ above it; [ADR-035](ADR.md) makes it two-sided.
 
 ### Phase 6, DPO: RED
 
+> ⚠️ **The Phase 6 numbers below are under audit and should not be cited yet (2026-08-10).**
+> They were produced by comparing `sft.pt` scored on GPU against `dpo.pt` scored on **CPU** — the
+> DPO phase was accidentally run under the global CPU-only torch instead of this repo's cu130
+> venv. Sampling draws are seed-pinned, but the logits are not: CUDA-bf16 and CPU-fp32 assign
+> different probabilities, so ~half the responses differ from the device alone. **The `+3.5pt`
+> delta and the "nothing was traded" floors below are therefore not yet interpretable as DPO
+> effects.** A device-matched re-read is in progress and this section will be corrected with the
+> matched numbers. Phase 5's numbers are unaffected and verified — re-scoring `sft.pt` on GPU
+> reproduced its committed responses 312/312.
+
 **DPO did not move its target by an amount this eval can resolve.** The bar was registered
 before the pairs were built, in the fixed read order *side-condition → floors → delta*, with
 the headline read last ([ADR-039](ADR.md)):
