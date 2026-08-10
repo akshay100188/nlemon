@@ -638,9 +638,232 @@ def _write_gate_report(cfg: Config, base: dict, sft: dict, results: dict,
     write_text(REPO_ROOT / cfg.results_dir / "sft_gate.md", "\n".join(lines))
 
 
+def derive_dpo_bars(cfg: Config, sft: dict) -> dict:
+    """Recompute Phase 6's floors and delta bar from sft.pt's recorded scores.
+
+    Same discipline as `derive_bars`: every threshold is rebuilt from the rule
+    that set it and cross-checked against the frozen config, because a gate that
+    reads a number off a summary can be handed a wrong summary.
+
+    The two bar TYPES here have different shapes on purpose (ADR-039):
+
+      floors      one-sided on the DROP from sft.pt. Holding is the achievement,
+                  so `no evidence of regression` (z 0.842, p > 0.20) is the pass
+                  and `established regression` (z 1.645, p <= 0.05) is the fail.
+                  A two-sided band round a floor would put "nothing changed" in
+                  amber by construction.
+      delta bar   two-sided per ADR-035, because CLEARING is the achievement and
+                  a miss inside the noise is not the same as a resolvable miss.
+    """
+    frozen = {"subject_mention": cfg.dpo_floor_subject_mention,
+              "length_band": cfg.dpo_floor_length_band,
+              "is_story": cfg.dpo_floor_is_story,
+              "not_degenerate": cfg.dpo_floor_not_degenerate}
+
+    bars, drift = {}, []
+    for s in ALL_SCORES:
+        p = sft["scores"][s]
+        # Priced on sft.pt's own clustering, not base's: DPO's base is sft.pt.
+        eff = effective_n(sft["per_prompt"], s)
+        se = _se_diff(p, eff["n_eff"])
+        green_floor = p - cfg.dpo_floor_green_z * se
+        red_floor = p - cfg.dpo_floor_red_z * se
+        bars[s] = {"sft": p, "se": round(se, 6),
+                   "green_floor": round(green_floor, 6),
+                   "red_floor": round(red_floor, 6),
+                   "frozen": frozen[s],
+                   "rule": (f"sft {p:.1%} - {cfg.dpo_floor_green_z} x SE "
+                            f"{se:.2%} = {green_floor:.1%}"), **eff}
+        if abs(green_floor - frozen[s]) > 0.001:
+            drift.append(f"floor {s}: rule gives {green_floor:.4f}, "
+                         f"config says {frozen[s]:.4f}")
+
+    p = sft["scores"]["subject_mention"]
+    se = bars["subject_mention"]["se"]
+    delta_bar = p + cfg.dpo_gate_subject_mention_delta
+    detect = cfg.dpo_gate_amber_z * se
+    if abs(delta_bar - cfg.dpo_gate_subject_mention_min) > 0.001:
+        drift.append(f"delta bar: rule gives {delta_bar:.4f}, config says "
+                     f"{cfg.dpo_gate_subject_mention_min:.4f}")
+    bars["_delta"] = {"sft": p, "bar": round(delta_bar, 6), "se": round(se, 6),
+                      "detection_floor": round(detect, 6),
+                      "green_at": round(delta_bar + detect, 6),
+                      "amber_minus_at": round(delta_bar - detect, 6),
+                      "multiple": round(cfg.dpo_gate_subject_mention_delta / detect, 3),
+                      "rule": (f"sft {p:.1%} + delta "
+                               f"{cfg.dpo_gate_subject_mention_delta:.1%}")}
+    if drift:
+        raise SystemExit("pre-registered Phase 6 bars do not match the rules "
+                         "that set them:\n  " + "\n  ".join(drift))
+    return bars
+
+
+def _normal_cdf(z: float) -> float:
+    import math
+    return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+
+
+def cmd_dpo_gate(cfg: Config) -> None:
+    """Phase 6 gate, read in the pre-registered order (ADR-039).
+
+    side-condition -> floors -> delta. The headline improvement is read LAST,
+    because both things that can void the phase sit upstream of it and reading
+    the delta first invites reading the rest in its light.
+    """
+    sft_p = REPO_ROOT / cfg.results_dir / "sft_scores_sft.json"
+    dpo_p = REPO_ROOT / cfg.results_dir / "sft_scores_dpo.json"
+    for p in (sft_p, dpo_p):
+        if not p.exists():
+            raise SystemExit(f"missing {p.name} - run `python -m src.checker "
+                             f"score --checkpoint ... --label ...` first.")
+    sft = json.loads(sft_p.read_text(encoding="utf-8"))
+    dpo = json.loads(dpo_p.read_text(encoding="utf-8"))
+
+    if sft["decoding"] != dpo["decoding"]:
+        raise SystemExit(f"decoding differs:\n  sft {sft['decoding']}\n  "
+                         f"dpo {dpo['decoding']}")
+    if sft["length_band"] != dpo["length_band"]:
+        raise SystemExit("length band differs between the two scorings")
+
+    bars = derive_dpo_bars(cfg, sft)
+    d = sft["decoding"]
+    print(f"Phase 6 gate  -  T={d['temperature']} k={d['top_k']} "
+          f"new_tokens={d['new_tokens']}, {sft['scores']['n']} held-out prompts, "
+          f"band {sft['length_band'][0]}-{sft['length_band'][1]} words")
+    print("  read order is fixed: side-condition -> floors -> delta\n")
+
+    # ---- 1. SIDE-CONDITION ------------------------------------------------ #
+    cert = cfg.dpo_certification_floor_subject_mention
+    sm_sft = sft["scores"]["subject_mention"]
+    sm_dpo = dpo["scores"]["subject_mention"]
+    cert_ok = sm_dpo >= cert
+    # The false-breach rate this rule costs on a DPO that changed nothing, so a
+    # breach is never read as certainty (registered: ~11%).
+    fb = _normal_cdf((cert - sm_sft) / bars["subject_mention"]["se"])
+    print("  1. SIDE-CONDITION - is Phase 5 still certified?")
+    print(f"     subject_mention  {sm_dpo:.1%}  vs Phase 5 bar {cert:.1%}   "
+          f"{'HOLDS' if cert_ok else 'VOID'}")
+    if not cert_ok:
+        print(f"     Phase 5's certification is VOID whatever the rest says.")
+    print(f"     false-breach rate of this rule on a neutral DPO: {fb:.1%}")
+
+    # ---- 2. FLOORS -------------------------------------------------------- #
+    print("\n  2. FLOORS - did DPO breach anything Phase 5 established?")
+    print(f"     {'sub-score':<17} {'sft':>7} {'dpo':>7} {'change':>8} "
+          f"{'green>=':>8} {'red<':>7}  verdict")
+    floors = {}
+    for s in ALL_SCORES:
+        v_sft, v_dpo = sft["scores"][s], dpo["scores"][s]
+        gf, rf = bars[s]["green_floor"], bars[s]["red_floor"]
+        state = "GREEN" if v_dpo >= gf else ("AMBER" if v_dpo >= rf else "RED")
+        floors[s] = {"sft": v_sft, "dpo": v_dpo, "change": round(v_dpo - v_sft, 6),
+                     "green_floor": gf, "red_floor": rf, "state": state,
+                     "n_eff": bars[s]["n_eff"], "icc": bars[s]["icc"],
+                     "se": bars[s]["se"], "rule": bars[s]["rule"]}
+        print(f"     {s:<17} {v_sft:>6.1%} {v_dpo:>6.1%} "
+              f"{(v_dpo - v_sft) * 100:>+6.1f}pt {gf:>7.1%} {rf:>6.1%}  {state}")
+
+    # ---- 3. DELTA --------------------------------------------------------- #
+    db = bars["_delta"]
+    print("\n  3. DELTA - did DPO improve its target?")
+    if sm_dpo >= db["green_at"]:
+        delta_state = "GREEN"
+    elif sm_dpo >= db["bar"]:
+        delta_state = "AMBER+"
+    elif sm_dpo >= db["amber_minus_at"]:
+        delta_state = "AMBER-"
+    else:
+        delta_state = "RED"
+    print(f"     subject_mention  sft {sm_sft:.1%} -> dpo {sm_dpo:.1%}  "
+          f"({(sm_dpo - sm_sft) * 100:+.1f}pt vs registered "
+          f"{cfg.dpo_gate_subject_mention_delta:+.1%})")
+    print(f"     bar {db['bar']:.1%}   GREEN >= {db['green_at']:.1%}   "
+          f"AMBER- >= {db['amber_minus_at']:.1%}   ->  {delta_state}")
+    print(f"     priced on n_eff {bars['subject_mention']['n_eff']} "
+          f"(ICC {bars['subject_mention']['icc']:.3f}), detection floor "
+          f"{db['detection_floor'] * 100:.1f}pt, bar is {db['multiple']}x it")
+
+    # ---- validity --------------------------------------------------------- #
+    shuf = dpo["scores"]["subject_mention_shuffled"]
+    shuf_ok = shuf <= cfg.sft_gate_shuffled_max
+    print(f"\n  validity: shuffled-subject control")
+    print(f"     shuffled rate  sft {sft['scores']['subject_mention_shuffled']:.1%}"
+          f"  dpo {shuf:.1%}  max {cfg.sft_gate_shuffled_max:.1%}  "
+          f"{'OK' if shuf_ok else 'INVALIDATES THE PASS'}")
+    print(f"     above chance   sft {sft['scores']['subject_mention_above_chance']:.1%}"
+          f"  dpo {dpo['scores']['subject_mention_above_chance']:.1%}")
+
+    floors_state = ("RED" if any(f["state"] == "RED" for f in floors.values())
+                    else ("AMBER" if any(f["state"] == "AMBER"
+                                         for f in floors.values()) else "GREEN"))
+    breached = [s for s, f in floors.items() if f["state"] != "GREEN"]
+
+    # ---- verdict, in the registered order --------------------------------- #
+    print(f"\n  side-condition {'HOLDS' if cert_ok else 'VOID'}    "
+          f"floors {floors_state}    delta {delta_state}    "
+          f"validity {'OK' if shuf_ok else 'BROKEN'}")
+
+    if not cert_ok:
+        overall = "RED"
+        note = ("Phase 5's certification is void. Nothing downstream of the "
+                "side-condition can rescue that.")
+    elif not shuf_ok:
+        overall = "RED"
+        note = "The shuffled control invalidates the result (ADR-026)."
+    elif floors_state == "RED":
+        overall = "RED"
+        note = ("DPO bought its target by trading something Phase 5 established. "
+                "Registered response: stop, report the trade, DO NOT extend.")
+    elif delta_state == "GREEN" and floors_state == "GREEN":
+        overall = "GREEN"
+        note = "DPO improved its target without spending anything measurable."
+    elif delta_state.startswith("AMBER") and floors_state == "GREEN":
+        overall = delta_state
+        note = ("Registered amber response: DPO refined weakly but honestly. "
+                "Report it, close the phase, DO NOT extend - running DPO longer "
+                "past its useful point is the failure the floors exist to catch.")
+    elif delta_state.startswith("AMBER") and floors_state == "AMBER":
+        overall = "AMBER-"
+        note = ("Registered amber response: DPO is spending the grazing margin. "
+                "Stop, report the trade, DO NOT extend.")
+    elif delta_state == "RED":
+        overall = "RED"
+        note = "DPO did not move its target by a resolvable amount."
+    else:
+        overall = floors_state
+        note = "See sub-scores; the floors carry the verdict."
+
+    print(f"\n  PHASE 6: {overall}")
+    print(f"  {note}")
+    if breached:
+        print(f"  floors not green: {', '.join(breached)}")
+
+    from utils.io import write_json
+    write_json(REPO_ROOT / cfg.results_dir / "dpo_gate.json", {
+        "verdict": overall, "note": note,
+        "read_order": ["side_condition", "floors", "delta"],
+        "side_condition": {"metric": "subject_mention", "bar": cert,
+                           "dpo": sm_dpo, "holds": bool(cert_ok),
+                           "false_breach_rate": round(fb, 4)},
+        "floors": floors, "floors_state": floors_state,
+        "delta": {**db, "dpo": sm_dpo, "state": delta_state},
+        "validity": {"shuffled": shuf, "max": cfg.sft_gate_shuffled_max,
+                     "ok": bool(shuf_ok)},
+        "decoding": d, "n": sft["scores"]["n"],
+        "length_band": sft["length_band"],
+        "mean_words": {"sft": sft["scores"]["mean_words"],
+                       "dpo": dpo["scores"]["mean_words"]},
+        "dpo_stage_hash": cfg.stage_hash("dpo"),
+        "sft_stage_hash": cfg.stage_hash("sft"),
+    })
+    print(f"wrote {REPO_ROOT / cfg.results_dir / 'dpo_gate.json'}")
+    if overall != "GREEN":
+        raise SystemExit(1)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Deterministic feature-checker (Phase 5).")
-    ap.add_argument("command", choices=("demo", "score", "gate", "oov"))
+    ap.add_argument("command", choices=("demo", "score", "gate", "oov", "dpogate"))
     ap.add_argument("--config", default=None)
     ap.add_argument("--checkpoint", default="checkpoints/base.pt")
     ap.add_argument("--label", default="base")
@@ -650,6 +873,8 @@ def main() -> None:
         cmd_demo(cfg)
     elif args.command == "gate":
         cmd_gate(cfg)
+    elif args.command == "dpogate":
+        cmd_dpo_gate(cfg)
     elif args.command == "oov":
         cmd_oov(cfg)
     else:

@@ -78,6 +78,41 @@ STAGE_FIELDS: dict[str, tuple[str, ...]] = {
         "sft_lr", "sft_epochs", "sft_micro_batch", "sft_grad_accum_steps",
         "sft_warmup_steps", "sft_min_lr_ratio", "sft_val_frac",
     ),
+    # Everything that changes the weights in dpo.pt. Added when the DPO run
+    # happened, which is what the STAGE_EXEMPT entries below promised ("stage
+    # added with the dpo run") - the IOU came due and this pays it.
+    #
+    # Includes the whole "sft" set, because dpo.pt is a continuation of sft.pt
+    # and a different fine-tune is a different preference-tune.
+    #
+    # And it includes the three sft_gate_* DECODING fields, which are exempt
+    # everywhere else. That is not an inconsistency, it is the reason stage
+    # hashes are per-stage: for Phase 5 those knobs "change what the model says,
+    # not what it knows", but Phase 6 samples its preference candidates with
+    # them, so they decide which pairs exist and therefore what dpo.pt weighs.
+    # The same field is a reporting knob for one stage and a weight-determining
+    # input for another.
+    #
+    # Excludes the dpo_gate_*/dpo_floor_* thresholds: moving a bar must never
+    # make an artifact look as though it changed.
+    "dpo": (
+        "seed", "strict_determinism",
+        "vocab_size", "d_model", "n_layers", "n_heads", "context_len",
+        "dropout", "mlp_ratio", "bias",
+        "micro_batch", "grad_accum_steps", "lr", "max_steps", "warmup_steps",
+        "weight_decay", "beta1", "beta2", "grad_clip", "min_lr_ratio",
+        "sft_subject_scan_docs", "sft_pair_scan_docs", "sft_subject_pool",
+        "sft_min_subject_count", "sft_min_head_ratio",
+        "sft_min_aboutness", "sft_min_aboutness_ratio",
+        "sft_heldout_subject_frac", "sft_max_pairs",
+        "sft_min_response_words", "sft_max_response_words",
+        "sft_lr", "sft_epochs", "sft_micro_batch", "sft_grad_accum_steps",
+        "sft_warmup_steps", "sft_min_lr_ratio", "sft_val_frac",
+        "sft_gate_temperature", "sft_gate_top_k", "sft_gate_new_tokens",
+        "pref_prompts", "pref_samples", "pref_max_length_gap",
+        "dpo_beta", "dpo_lr", "dpo_epochs", "dpo_micro_batch",
+        "dpo_grad_accum_steps", "dpo_warmup_steps",
+    ),
 }
 
 # Fields deliberately outside every stage hash, with the reason.
@@ -147,15 +182,10 @@ STAGE_EXEMPT: dict[str, str] = {
     "dpo_gate_subject_mention_delta": "pre-registered Phase 6 gate threshold",
     "dpo_gate_subject_mention_min": "pre-registered Phase 6 gate threshold",
     "dpo_gate_amber_z": "pre-registered Phase 6 gate threshold",
-    "pref_prompts": "preference-pair construction (stage added with dpo.py)",
-    "pref_samples": "preference-pair construction",
-    "pref_max_length_gap": "preference-pair construction",
-    "dpo_beta": "dpo training (stage added with the dpo run)",
-    "dpo_lr": "dpo training",
-    "dpo_epochs": "dpo training",
-    "dpo_micro_batch": "dpo training",
-    "dpo_grad_accum_steps": "dpo training",
-    "dpo_warmup_steps": "dpo training",
+    # pref_* and dpo_* training fields moved INTO the "dpo" stage hash when the
+    # DPO run landed, exactly as their exemption reason promised. Only the
+    # Phase 6 gate thresholds above stay exempt, on the standing rule that
+    # moving a bar must not make an artifact look changed.
     "resolution_scan_docs": "metric construction; no weight depends on it",
     "resolution_markers": "metric construction",
     "resolution_min_marker_count": "metric construction",

@@ -2001,3 +2001,71 @@ move would have been to report the RED first and the fix second, exactly as Phas
 Post-fix, the curve confirms itself in band: step 1 logs **0.693147** — the objective now starts
 where it must under the conditions it trains under. (Ranking accuracy reads 0.000 at step 1
 because `logits > 0` is false at exactly zero; a perfect tie, correctly reported.)
+
+## ADR-042 — A stage artifact stamped a hash that a later phase can move
+
+**Status:** accepted. **Phase:** 6. **Written before the Phase 6 scores existed.**
+
+Three things surfaced while building the Phase 6 gate. None changed a result; two change what a
+future reader can trust.
+
+### 1. Phase 5 reproduced exactly, by accident
+
+`--checkpoint` and `--label` belong to `checker score`, not `checker gate`. Passing them to
+`gate` silently re-ran **Phase 5's** gate — `cmd_gate` reads `sft_scores_base.json` and
+`sft_scores_sft.json` by name and takes no checkpoint at all. A flag that is accepted by the
+parser and ignored by the command is a small trap, and it fired.
+
+The accident was worth having. All four sub-scores across 312 prompts, all four bars, the
+effective-n table and the shuffled control came back **byte-identical** to the committed
+artifact, on a different day and a later commit. Phase 5 attempt #2 is reproducible, and now
+demonstrably so rather than assertedly.
+
+### 2. But one field moved, and it is the wrong field to be moving
+
+The only difference in the regenerated `sft_gate.json` was `config_hash`, from `fbc725d5e63b`
+to `519fd56c159c` — because I had edited `dpo_warmup_steps` and `pref_prompts`, **Phase 6
+knobs**. `sft_stage_hash` held at `ecad1e4b412d`, which is the whole point of per-stage hashing
+working correctly.
+
+So a Phase 5 artifact carries a global fingerprint that any later phase can move. A future
+reader re-verifying Phase 5 sees a hash mismatch that means nothing, and the natural conclusion
+— "something about Phase 5 changed" — is false. **The global hash is not provenance for a stage
+artifact; it is provenance for the whole config at the moment of writing, which is a different
+and much weaker claim.** `sft_stage_hash` is the field that carries the Phase 5 claim, and it is
+the one to check.
+
+The regenerated file was **discarded rather than committed**. Re-stamping a closed phase's
+artifact with a hash reflecting later edits makes it a worse record of that phase, not a better
+one. `results/sft_gate.json` stays as it was written when Phase 5 closed.
+
+Not renaming or removing the field now: it is recorded in shipped artifacts across five phases,
+and quietly changing what a published field means is worse than documenting the trap. **Read
+`<stage>_stage_hash`, not `config_hash`, when verifying a stage.**
+
+### 3. The DPO stage hash existed only as an IOU
+
+`STAGE_EXEMPT` carried `"dpo_beta": "dpo training (stage added with the dpo run)"` and five
+siblings. The DPO run has now happened, so the promise came due; `cfg.stage_hash("dpo")` raised
+`unknown stage` when the gate asked for it. Added, and the exemptions removed.
+
+The `dpo` stage includes the whole `sft` set, because `dpo.pt` continues `sft.pt` and a
+different fine-tune is a different preference-tune. It excludes the `dpo_gate_*` and
+`dpo_floor_*` thresholds, on the standing rule that moving a bar must never make an artifact
+look changed.
+
+**And it includes three fields that are exempt everywhere else:** `sft_gate_temperature`,
+`sft_gate_top_k`, `sft_gate_new_tokens`. Their exemption reads "gate decoding; changes what the
+model says, not what it knows" — correct for Phase 5, where they only affect a reported number.
+But Phase 6 samples its preference candidates with exactly those knobs, so they decide **which
+pairs exist**, and therefore what `dpo.pt` weighs. Change the sampling temperature and you get a
+different preference set and different weights from identical training hyperparameters.
+
+*This is the argument for per-stage hashing stated better than the original comment stated it.*
+The question is never "is this field a decoding knob or a training input" — it is **"does this
+field determine THIS stage's output"**, and the same field can answer differently for different
+stages. A single global hash cannot express that; it is exactly what stage hashes are for.
+`assert_stage_coverage()` passes, and the `sft` hash is unchanged at `ecad1e4b412d`, so adding a
+Phase 6 stage did not disturb Phase 5's provenance.
+
+New stage hash: `dpo = d641cf06e7ea`.
