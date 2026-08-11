@@ -1,3 +1,19 @@
+---
+license: mit
+language:
+  - en
+library_name: pytorch
+pipeline_tag: text-generation
+datasets:
+  - roneneldan/TinyStories
+tags:
+  - gpt
+  - from-scratch
+  - tinystories
+  - small-language-model
+  - reproducible-research
+---
+
 # Model card — nLemon-14
 
 **nLemon-14-sft** · a 13.8M-parameter decoder-only transformer, pretrained from scratch and

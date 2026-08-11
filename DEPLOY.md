@@ -61,14 +61,14 @@ Output lands in `build/space/` (gitignored — it is derived). Authored Space fi
 
 ```bash
 hf repo create nlemon-14 --repo-type model          # confirm flag with --help; CLI versions differ
-hf upload akshay100188/nlemon-14 checkpoints/nlemon-14-sft-weights.pt --repo-type model
-hf upload akshay100188/nlemon-14 MODEL_CARD.md README.md --repo-type model
+hf upload akshay0689/nlemon-14 checkpoints/nlemon-14-sft-weights.pt --repo-type model
+hf upload akshay0689/nlemon-14 MODEL_CARD.md README.md --repo-type model
 ```
 
 **Then re-verify the uploaded bytes — do not trust the upload:**
 
 ```bash
-hf download akshay100188/nlemon-14 nlemon-14-sft-weights.pt --local-dir /tmp/nl_verify
+hf download akshay0689/nlemon-14 nlemon-14-sft-weights.pt --local-dir /tmp/nl_verify
 sha256sum /tmp/nl_verify/nlemon-14-sft-weights.pt
 # PASS: e3f6b7ce7e5a1a74337a3a3ae2f2968ff1131e9de79843606cef705748e7668b
 # Anything else: the uploaded artifact is not the certified one. Re-upload; do not proceed.
@@ -78,7 +78,7 @@ sha256sum /tmp/nl_verify/nlemon-14-sft-weights.pt
 
 ```bash
 hf repo create nlemon-14 --repo-type space --space-sdk gradio
-cd build/space && hf upload akshay100188/nlemon-14 . --repo-type space
+cd build/space && hf upload akshay0689/nlemon-14 . --repo-type space
 ```
 
 ## Step C — verify live

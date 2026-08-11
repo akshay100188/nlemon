@@ -23,7 +23,7 @@ against was pre-registered, allowed to fail, and several times did.
 
 - Code: <https://github.com/akshay100188/nlemon>
 - Write-up: <https://akshaybhatnagar.me>
-- Model card: <https://huggingface.co/akshay100188/nlemon-14>
+- Model card: <https://huggingface.co/akshay0689/nlemon-14>
 
 ## Licensing
 

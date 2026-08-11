@@ -41,7 +41,7 @@ from config import Config
 from model import GPT
 
 # -- config --------------------------------------------------------------
-MODEL_REPO = "akshay100188/nlemon-14"
+MODEL_REPO = "akshay0689/nlemon-14"
 WEIGHTS_FILE = "nlemon-14-sft-weights.pt"      # the certified release asset
 WEIGHTS_SHA256 = "e3f6b7ce7e5a1a74337a3a3ae2f2968ff1131e9de79843606cef705748e7668b"
 TOKENIZER_FILE = "tokenizer.json"
@@ -196,7 +196,7 @@ BUILT = """
     <span>&middot;</span>
     <a href="https://akshaybhatnagar.me" target="_blank">Write-up</a>
     <span>&middot;</span>
-    <a href="https://huggingface.co/akshay100188/nlemon-14" target="_blank">Model card</a>
+    <a href="https://huggingface.co/akshay0689/nlemon-14" target="_blank">Model card</a>
   </p>
 </div>
 """
