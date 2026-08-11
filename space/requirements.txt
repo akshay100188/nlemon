@@ -1,5 +1,11 @@
 torch>=2.2
-gradio>=5.0
+# Pinned to the 5.x line because README.md declares sdk_version "5.0.0", and HF
+# installs the version the frontmatter declares. An unbounded `gradio>=5.0`
+# installed 6.22 locally, where `theme` and `css` moved from Blocks() to launch()
+# and are SILENTLY IGNORED - so the local preview rendered unstyled while HF would
+# render styled. Two surfaces telling different stories, from a declared version
+# and an installed version that nothing compared.
+gradio>=5.0,<6
 tokenizers>=0.19
 huggingface_hub>=0.24
 # config.py parses the pinned YAML config; the repo's real config.py is vendored
