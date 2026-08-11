@@ -38,3 +38,14 @@ __pycache__/
 # source, so the build output is derived and not committed. The authored
 # Space-specific files live in space/ and ARE committed.
 build/
+
+# Credentials. Belt-and-braces only: the real deploy token lives OUTSIDE this
+# repo at ~/.nlemon-deploy.env, because a token inside a repo is one bad glob
+# away from being published. These patterns catch a token that lands here by
+# accident anyway.
+.env
+.env.*
+*.env
+# Deliberately NOT a broad `*token*` rule: it matches data/tokenizer.json and
+# src/tokenizer.py, which must ship. Over-broad ignore rules that need three
+# negations to undo are how a required file goes missing from a build.
