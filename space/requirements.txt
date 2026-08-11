@@ -1,0 +1,7 @@
+torch>=2.2
+gradio>=5.0
+tokenizers>=0.19
+huggingface_hub>=0.24
+# config.py parses the pinned YAML config; the repo's real config.py is vendored
+# into the Space by scripts/build_space.py, and it imports yaml at module load.
+PyYAML>=6.0

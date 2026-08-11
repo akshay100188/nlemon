@@ -79,6 +79,18 @@ check: it re-scores each response against a *different* subject, so a model that
 nouns scores high on it. At 1.9% it does not, which is what licenses reading `subject_mention` as
 adherence rather than noun-spraying.
 
+## Licensing
+
+- **Weights, code, and this card:** MIT.
+- **Training corpus:** [TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories),
+  revision `f54c09fd23315a6f9c86f9dc80f725de7d8f9c64`, under **CDLA-Sharing-1.0**.
+
+CDLA-Sharing-1.0's share-alike obligation attaches to the **Data**. Computational **Results**
+obtained from analysing the data are explicitly outside it, and model weights are Results — which
+is the basis for releasing the weights under MIT. The corpus is not redistributed here; the build
+pulls it from its own source, and `data/manifest.json` records the exact revision and its license
+so the provenance is checkable rather than asserted. *Stated for transparency, not as legal advice.*
+
 ## Limitations
 
 - **Tiny, and trained on one narrow corpus.** TinyStories is simple English children's stories. The

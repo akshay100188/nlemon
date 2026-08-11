@@ -32,3 +32,9 @@ __pycache__/
 
 # Local HF cache if it ever lands inside the repo
 .cache/
+
+# The HF Space is BUILT from the repo, never hand-maintained.
+# `python -m scripts.build_space` regenerates it and asserts byte-identity to
+# source, so the build output is derived and not committed. The authored
+# Space-specific files live in space/ and ARE committed.
+build/
